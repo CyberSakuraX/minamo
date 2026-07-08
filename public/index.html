@@ -302,6 +302,38 @@ header {
   letter-spacing: .08em; line-height: 1.9; text-align: center;
 }
 
+/* ---------- 風景の複利(層1・累計日数のみから決定的に描画。docs/07) ---------- */
+.sky-dawn {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,196,148,.22), rgba(255,231,203,.10) 45%, transparent 72%);
+}
+.moon {
+  position: absolute; left: 78%; top: 2px; pointer-events: none;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--glow-ink); opacity: .8;
+  box-shadow: 0 0 10px 3px rgba(240,170,110,.3);
+}
+.ridge {
+  position: absolute; bottom: 0; pointer-events: none;
+  background: transparent;
+  border-top: 1px solid var(--ink);
+  border-radius: 100% 100% 0 0;
+  opacity: .16;
+}
+.ridge-l { left: -40px; right: 52%; height: 64px; }
+.ridge-r { left: 56%; right: -50px; height: 46px; }
+.water { position: absolute; left: 10%; right: 10%; bottom: 2px; height: 8px; pointer-events: none; }
+.water::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240,170,110,.55) 32%, rgba(242,227,196,.65) 50%, rgba(240,170,110,.55) 68%, transparent);
+}
+.water::after {
+  content: ''; position: absolute; left: 28%; right: 28%; top: 4px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(242,227,196,.4), transparent);
+}
+#stamp.dawn .sun-glow { opacity: .8; }
+.grain { position: absolute; border-radius: 50%; background: var(--glow-ink); box-shadow: 0 0 5px rgba(200,112,60,.45); pointer-events: none; }
+
 /* ---------- 憲章 ---------- */
 #charter { margin: 48px 28px 0; }
 #charter h2 {
@@ -350,9 +382,16 @@ footer { margin: 52px 28px 0; text-align: center; }
   <main>
 
     <section id="stamp">
+      <!-- 風景の複利: 累計日数だけから決定的に描画。休んでも決して後退しない(docs/07) -->
+      <div class="sky-dawn" id="scape-sky" hidden></div>
       <div class="hill hill-l"></div>
       <div class="hill hill-r"></div>
       <div class="sun-glow"></div>
+      <span class="moon" id="scape-moon" hidden></span>
+      <div class="ridge ridge-l" id="scape-ridge-l" hidden></div>
+      <div class="ridge ridge-r" id="scape-ridge-r" hidden></div>
+      <div class="water" id="scape-water" hidden></div>
+      <div id="scape-grains"></div>
       <p class="lead">今日も、あなたの一歩を。</p>
 
       <div id="stamp-button-wrap">
@@ -603,6 +642,36 @@ footer { margin: 52px 28px 0; text-align: center; }
       .catch(function () {});
   }
 
+  /* ---------- 風景の複利: total のみから決定的に描画(docs/07) ---------- */
+  var GRAIN_CAP = 24;
+  function renderScape(total) {
+    $('scape-sky').hidden = !(total >= 365);
+    $('scape-moon').hidden = !(total >= 90);
+    $('scape-ridge-l').hidden = !(total >= 30);
+    $('scape-ridge-r').hidden = !(total >= 30);
+    $('scape-water').hidden = !(total >= 240);
+    document.getElementById('stamp').classList.toggle('dawn', total >= 365);
+
+    var wrap = $('scape-grains');
+    wrap.innerHTML = '';
+    var n = Math.min(total, GRAIN_CAP);
+    var r = rng('minamo-grains'); // 固定シード: n粒目の位置は永久に同じ(昨日の粒は今日も同じ場所)
+    for (var i = 0; i < n; i++) {
+      var left = 6 + r() * 88;
+      var bottom = 6 + r() * 52;
+      var s = 1.5 + r() * 1.7;
+      var op = 0.55 + r() * 0.3; // 乱数の消費順は変えない(粒の位置を動かさないため)
+      var g = document.createElement('span');
+      g.className = 'grain';
+      g.style.left = left.toFixed(2) + '%';
+      g.style.bottom = bottom.toFixed(1) + 'px';
+      g.style.width = s.toFixed(2) + 'px';
+      g.style.height = s.toFixed(2) + 'px';
+      g.style.opacity = op.toFixed(2);
+      wrap.appendChild(g);
+    }
+  }
+
   /* ---------- 描画 ---------- */
   function render() {
     var t = todayKey();
@@ -620,6 +689,13 @@ footer { margin: 52px 28px 0; text-align: center; }
       elSealY.textContent = parts[0].split('').map(function (ch) { return '〇一二三四五六七八九'[+ch]; }).join('');
       elSealMD.textContent = kanjiNum(+parts[1]) + '月' + kanjiNum(+parts[2]) + '日';
       elSealTotal.textContent = total;
+
+      // 印影の日ごとのゆらぎ(日付シード・同じ日は誰の印影も同じゆらぎ / docs/07 §4)
+      var w = rng('minamo-seal/' + t);
+      var sealEl = document.querySelector('.seal');
+      sealEl.style.transform = 'rotate(' + (-(2.5 + w() * 2)).toFixed(2) + 'deg)';
+      sealEl.querySelector('.ring').style.inset = (7 + Math.round(w() * 3)) + 'px';
+      sealEl.style.opacity = (0.94 + w() * 0.06).toFixed(3); // 下限0.94: 「印の薄れ」に見せない
     }
 
     /* 添え書き 3態 */
@@ -641,6 +717,9 @@ footer { margin: 52px 28px 0; text-align: center; }
     elTotalNum.textContent = total;
     elSumLine.hidden = !(total > 0 && sumKm > 0);
     elSumNum.textContent = sumKm;
+
+    /* 風景の複利 */
+    renderScape(total);
 
     /* 層2 — サーバの実数。未取得・不達は「—」(エラーUIは置かない) */
     var shownCount = (serverCount == null) ? null : serverCount + ((stampedThisSession && stamped) ? 1 : 0);

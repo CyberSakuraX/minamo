@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f0eee9}
+@keyframes mkFlash{0%{opacity:0}14%{opacity:.95}45%{opacity:.7}100%{opacity:0}}
+@keyframes mkPulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.3);opacity:1}}
+@keyframes mkAppear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes mkTwinkle{0%,100%{filter:brightness(.85)}50%{filter:brightness(1.25)}}
+</style>
+</helmet>
+<div style="display:flex;justify-content:center;align-items:flex-start">
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+<div style="position:relative;min-height:100%;box-sizing:border-box;padding-bottom:56px;background:var(--bg,#f1ebdf);color:var(--ink,#2b2620);font-family:'Noto Serif JP',serif;-webkit-font-smoothing:antialiased;{{ toneVars }}">
+
+  <div style="position:relative;padding:76px 28px 0;text-align:center">
+    <div style="font-family:'Zen Old Mincho',serif;font-size:32px;font-weight:700;letter-spacing:.3em;padding-left:.3em">黙走会</div>
+    <div style="margin-top:2px;font-size:10.5px;letter-spacing:.42em;padding-left:.42em;color:var(--sub,#8b8272)">mokuso.run</div>
+    <div style="margin-top:16px;font-size:12px;letter-spacing:.16em;color:var(--sub,#8b8272)">各自の場所で、黙って走る。主催者はいない。</div>
+  </div>
+
+  <div style="position:relative;margin-top:22px;padding:14px 0 10px;text-align:center;overflow:hidden">
+    <div style="position:absolute;left:-40px;right:52%;bottom:0;height:64px;background:var(--ink,#2b2620);opacity:.06;border-radius:100% 100% 0 0;filter:blur(7px);pointer-events:none"></div>
+    <div style="position:absolute;left:56%;right:-50px;bottom:0;height:46px;background:var(--ink,#2b2620);opacity:.05;border-radius:100% 100% 0 0;filter:blur(7px);pointer-events:none"></div>
+    <div style="position:absolute;left:50%;bottom:-10px;transform:translateX(-50%);width:190px;height:190px;border-radius:50%;background:radial-gradient(circle, var(--glow,rgba(224,138,84,.55)), transparent 68%);opacity:.5;pointer-events:none"></div>
+
+    <div style="position:relative;font-size:12.5px;letter-spacing:.26em;padding-left:.26em;margin-bottom:18px">今日も、あなたの一歩を。</div>
+
+    <sc-if value="{{ notStamped }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;display:flex;justify-content:center">
+        <button onClick="{{ pressStamp }}" style-active="transform:rotate(-2deg) scale(.96)" style="position:relative;width:180px;height:180px;border-radius:50%;border:0;cursor:pointer;transform:rotate(-2deg);background:radial-gradient(circle at 38% 30%, var(--accentHi,#cd5a38), var(--accent,#b5432a) 55%, var(--accentInk,#93331f) 100%);box-shadow:0 12px 28px var(--accentShadow,rgba(147,51,31,.26)), inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -18px 30px rgba(60,10,0,.16);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform .15s ease">
+          <span style="position:absolute;inset:9px;border-radius:50%;border:1.5px solid rgba(255,244,230,.5);pointer-events:none"></span>
+          <span style="writing-mode:vertical-rl;height:112px;font-family:'Noto Serif JP',serif;font-size:23px;font-weight:600;letter-spacing:.22em;color:#fdf3e4;line-height:2">走った印を押す</span>
+          <span style="font-size:9.5px;letter-spacing:.34em;padding-left:.34em;color:rgba(253,243,228,.78)">一日一回まで</span>
+        </button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ stamped }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;animation:mkAppear .7s ease both">
+        <div style="position:relative;width:180px;height:180px;border-radius:50%;transform:rotate(-3.5deg);border:3px solid var(--accent,#b5432a);color:var(--accent,#b5432a);display:flex;align-items:center;justify-content:center">
+          <span style="position:absolute;inset:8px;border-radius:50%;border:1px solid var(--accentSoft,rgba(181,67,42,.35));pointer-events:none"></span>
+          <span style="writing-mode:vertical-rl;font-family:'Zen Old Mincho',serif;font-size:46px;font-weight:700;letter-spacing:.28em;line-height:1.1;padding-top:.28em">黙走</span>
+          <span style="position:absolute;right:26px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;white-space:nowrap;font-size:10.5px;letter-spacing:.14em;color:var(--accentInk,#93331f)">{{ sealY }}</span>
+          <span style="position:absolute;left:26px;top:50%;transform:translateY(-50%);writing-mode:vertical-rl;white-space:nowrap;font-size:10.5px;letter-spacing:.14em;color:var(--accentInk,#93331f)">{{ sealMD }}</span>
+        </div>
+        <div style="font-size:15px;letter-spacing:.12em">これで<span style="font-size:33px;color:var(--accent,#b5432a);padding:0 6px;font-weight:500">{{ total }}</span>日目です</div>
+        <div style="display:flex;flex-direction:column;gap:5px;align-items:center">
+          <div style="font-size:12px;letter-spacing:.14em;color:var(--sub,#8b8272);white-space:nowrap">今日は、もう印を残しています</div>
+          <div style="font-size:10.5px;letter-spacing:.12em;color:var(--sub,#8b8272);white-space:nowrap">また明日の朝に、お待ちしています。</div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ showEditor }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:18px 24px 6px;background:var(--paper,#faf6ec);border:1px solid var(--line,rgba(43,38,32,.16));border-radius:8px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;animation:mkAppear .6s ease both">
+      <div style="font-size:13px;letter-spacing:.14em">添え書きしますか?<span style="color:var(--sub,#8b8272);font-size:11px">(任意)</span></div>
+      <div style="display:flex;gap:10px">
+        <input type="text" inputmode="decimal" placeholder="距離(km)" defaultValue="{{ draftKm }}" onChange="{{ onKm }}" style="flex:1;min-width:0;font-family:'Noto Serif JP',serif;font-size:17px;padding:13px 12px;border:1px solid var(--line,rgba(43,38,32,.16));border-radius:6px;background:rgba(255,255,255,.55);color:var(--ink,#2b2620);outline:none;box-sizing:border-box">
+        <input type="text" inputmode="decimal" placeholder="時間(分)" defaultValue="{{ draftMin }}" onChange="{{ onMin }}" style="flex:1;min-width:0;font-family:'Noto Serif JP',serif;font-size:17px;padding:13px 12px;border:1px solid var(--line,rgba(43,38,32,.16));border-radius:6px;background:rgba(255,255,255,.55);color:var(--ink,#2b2620);outline:none;box-sizing:border-box">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onClick="{{ saveNote }}" style-active="opacity:.85" style="flex:1;font-family:inherit;font-size:13.5px;letter-spacing:.22em;padding-left:.22em;padding-top:13px;padding-bottom:13px;border:0;border-radius:6px;background:var(--accent,#b5432a);color:#fdf3e4;cursor:pointer">添える</button>
+        <button onClick="{{ skipNote }}" style-active="opacity:.7" style="flex:1;font-family:inherit;font-size:12.5px;letter-spacing:.18em;padding-left:.18em;padding-top:13px;padding-bottom:13px;border:1px solid var(--line,rgba(43,38,32,.16));border-radius:6px;background:transparent;color:var(--sub,#8b8272);cursor:pointer">あとで</button>
+      </div>
+      <div style="font-size:10.5px;color:var(--sub,#8b8272);letter-spacing:.08em;text-align:center">入力は任意です。空欄のままでもかまいません。</div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--line,rgba(43,38,32,.3));border-radius:6px;padding:13px;font-size:11.5px;color:var(--sub,#8b8272);letter-spacing:.1em;cursor:pointer">
+        <input type="file" accept=".gpx,.tcx,.fit" onChange="{{ onFile }}" style="display:none">
+        記録ファイルを添える(GPX / TCX / FIT)
+      </label>
+      <sc-if value="{{ hasFileMsg }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:10.5px;color:var(--accentInk,#93331f);text-align:center;letter-spacing:.06em">{{ fileMsg }}</div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showSummary }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:18px 24px 6px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:12px;color:var(--sub,#8b8272);letter-spacing:.1em">
+      <span>今日の添え書き:<span style="color:var(--ink,#2b2620)">{{ noteSummary }}</span></span>
+      <button onClick="{{ openNote }}" style="font-family:inherit;font-size:11px;letter-spacing:.1em;border:0;background:transparent;color:var(--accentInk,#93331f);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px">書き直す</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showLink }}" hint-placeholder-val="{{ false }}">
+    <div style="margin:18px 24px 6px;text-align:center">
+      <button onClick="{{ openNote }}" style="font-family:inherit;font-size:11.5px;letter-spacing:.14em;border:0;background:transparent;color:var(--sub,#8b8272);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:8px">添え書きする(任意)</button>
+    </div>
+  </sc-if>
+
+  <div style="margin:26px 20px 16px;background:var(--paper,#faf6ec);border:1px solid var(--line,rgba(43,38,32,.16));border-radius:8px;padding:20px 22px">
+    <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line,rgba(43,38,32,.16));padding-bottom:10px;margin-bottom:14px">
+      <span style="color:var(--accent,#b5432a);font-size:14px;letter-spacing:.08em">01</span>
+      <span style="font-size:14px;letter-spacing:.14em">わたしの積み重ね</span>
+      <span style="margin-left:auto;flex:none;white-space:nowrap;font-size:10px;color:var(--sub,#8b8272);letter-spacing:.14em">(非公開)</span>
+    </div>
+    <sc-if value="{{ hasTotal }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font-size:38px;color:var(--ink,#2b2620);font-weight:500;line-height:1">{{ total }}</span>
+        <span style="font-size:13px;letter-spacing:.1em">日</span>
+        <span style="font-size:11px;color:var(--sub,#8b8272);letter-spacing:.12em;margin-left:6px">総走行日数(累計のみ)</span>
+      </div>
+      <sc-if value="{{ hasSum }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:10px;font-size:11.5px;color:var(--sub,#8b8272);letter-spacing:.1em">添え書きの累計:<span style="color:var(--ink,#2b2620)">{{ sumKm }}</span> km</div>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{ noTotal }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:12.5px;color:var(--sub,#8b8272);letter-spacing:.12em">まだ、印はありません。最初の一歩から始まります。</div>
+    </sc-if>
+    <div style="margin-top:12px;font-size:10.5px;color:var(--sub,#8b8272);letter-spacing:.08em;line-height:1.9">あなたにだけ見える、静かな累積です。休んでも、減りません。</div>
+  </div>
+
+  <div style="margin:0 20px 16px;background:var(--paper,#faf6ec);border:1px solid var(--line,rgba(43,38,32,.16));border-radius:8px;padding:20px 22px">
+    <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line,rgba(43,38,32,.16));padding-bottom:10px;margin-bottom:14px">
+      <span style="color:var(--accent,#b5432a);font-size:14px;letter-spacing:.08em">02</span>
+      <span style="font-size:14px;letter-spacing:.14em">今日の静かなつながり</span>
+      <span style="margin-left:auto;flex:none;white-space:nowrap;font-size:10px;color:var(--sub,#8b8272);letter-spacing:.14em">(匿名)</span>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;row-gap:10px">
+      <span style="font-size:13px;letter-spacing:.12em;white-space:nowrap;flex:none">今日、共に走った人</span>
+      <span style="display:flex;align-items:baseline;gap:8px;flex:none">
+        <span style="font-size:38px;color:var(--accent,#b5432a);font-weight:500;line-height:1">{{ participantsShown }}</span>
+        <span style="font-size:13px;letter-spacing:.1em">人</span>
+      </span>
+    </div>
+    <div style="margin-top:14px;font-size:10.5px;color:var(--sub,#8b8272);letter-spacing:.08em;line-height:1.9">誰のものでもない数字です。明日には、またゼロから始まります。</div>
+  </div>
+
+  <div style="margin:0 20px 8px;background:var(--night,#201f29);border-radius:8px;padding:18px 20px 16px;color:var(--nightInk,#cfc9ba)">
+    <div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid rgba(255,255,255,.12);padding-bottom:10px">
+      <span style="color:var(--glowInk,#e0a878);font-size:14px;letter-spacing:.08em">03</span>
+      <span style="font-size:14px;letter-spacing:.14em">会釈</span>
+      <span style="margin-left:auto;flex:none;white-space:nowrap;font-size:10px;color:var(--nightSub,#8f8a7e);letter-spacing:.14em">(匿名・一方向)</span>
+    </div>
+    <sc-if value="{{ receivedBow }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 2px 0">
+        <span style="flex:none;width:9px;height:9px;border-radius:50%;background:#f4d9a8;box-shadow:0 0 12px 4px var(--glow,rgba(224,138,84,.55));animation:mkPulse 3s ease-in-out infinite"></span>
+        <span style="font-size:12px;letter-spacing:.1em">今日のあなたの走りに、誰かが会釈しました。</span>
+      </div>
+    </sc-if>
+    <div style="position:relative;height:188px;margin:6px 0 4px">
+      <sc-for list="{{ dots }}" as="dot" hint-placeholder-count="6">
+        <button onClick="{{ dot.tap }}" style="{{ dot.wrap }}"><span style="{{ dot.dot }}"></span></button>
+      </sc-for>
+    </div>
+    <div style="font-size:10.5px;color:var(--nightSub,#8f8a7e);letter-spacing:.08em;line-height:1.9;text-align:center">{{ bowCaption }}</div>
+  </div>
+
+  <sc-if value="{{ flash }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:40;pointer-events:none;background:linear-gradient(180deg, rgba(255,196,148,.9), rgba(255,231,203,.6) 45%, rgba(255,250,240,.15));animation:mkFlash 1.25s ease-out forwards"></div>
+  </sc-if>
+
+</div>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:440,&quot;height&quot;:900},&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;shu&quot;,&quot;sumi&quot;,&quot;akatsuki&quot;],&quot;default&quot;:&quot;shu&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;見た目&quot;},&quot;preset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;そのまま&quot;,&quot;初回(0日目)&quot;,&quot;継続中(36日目・未押印)&quot;,&quot;押印済み(128日目)&quot;],&quot;default&quot;:&quot;そのまま&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;デモ操作&quot;},&quot;receivedBow&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;デモ操作&quot;},&quot;participants&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:47,&quot;min&quot;:0,&quot;max&quot;:200,&quot;step&quot;:1,&quot;unit&quot;:&quot;人&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;デモ操作&quot;},&quot;flashEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;デモ操作&quot;}}">
+class Component extends DCLogic {
+  state = { flash: false, showNoteEditor: false, fileMsg: '', draftKm: '', draftMin: '' };
+
+  tone() { return this.props.tone ?? 'shu'; }
+  ns() { return 'mokuso.' + this.tone() + '.'; }
+  todayKey() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date()); }
+  yesterdayKey() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date(Date.now() - 86400000)); }
+  lsGet(k, d) { try { const v = localStorage.getItem(this.ns() + k); return v == null ? d : v; } catch (e) { return d; } }
+  lsSet(k, v) { try { localStorage.setItem(this.ns() + k, String(v)); } catch (e) {} }
+  lsDel(k) { try { localStorage.removeItem(this.ns() + k); } catch (e) {} }
+
+  componentDidMount() { this.applyPreset(this.props.preset); }
+  componentDidUpdate(prev) { if (prev.preset !== this.props.preset) this.applyPreset(this.props.preset); }
+
+  applyPreset(p) {
+    if (!p || p === 'そのまま') return;
+    if (p.indexOf('初回') >= 0) {
+      this.lsSet('total', 0); this.lsDel('last'); this.lsDel('note');
+      this.lsDel('bowed'); this.lsDel('bowedIdx'); this.lsSet('sumKm', 0);
+    } else if (p.indexOf('継続中') >= 0) {
+      this.lsSet('total', 36); this.lsSet('last', this.yesterdayKey()); this.lsDel('note');
+      this.lsDel('bowed'); this.lsDel('bowedIdx'); this.lsSet('sumKm', 186.4);
+    } else if (p.indexOf('押印済み') >= 0) {
+      this.lsSet('total', 128); this.lsSet('last', this.todayKey()); this.lsDel('note');
+      this.lsDel('bowed'); this.lsDel('bowedIdx'); this.lsSet('sumKm', 812.5);
+    }
+    this.setState({ showNoteEditor: false, fileMsg: '', flash: false, draftKm: '', draftMin: '' });
+  }
+
+  noteToday() {
+    try { const n = JSON.parse(this.lsGet('note', 'null')); return n && n.date === this.todayKey() ? n : null; }
+    catch (e) { return null; }
+  }
+
+  pressStamp = () => {
+    const t = this.todayKey();
+    if (this.lsGet('last', '') === t) return;
+    const total = (parseInt(this.lsGet('total', '0'), 10) || 0) + 1;
+    this.lsSet('total', total); this.lsSet('last', t);
+    const doFlash = this.props.flashEnabled ?? true;
+    this.setState({ flash: doFlash, showNoteEditor: true, draftKm: '', draftMin: '' });
+    if (doFlash) { clearTimeout(this._ft); this._ft = setTimeout(() => this.setState({ flash: false }), 1350); }
+  };
+
+  saveNote = () => {
+    const t = this.todayKey();
+    const km = parseFloat(this.state.draftKm);
+    const min = parseFloat(this.state.draftMin);
+    if (!(km > 0) && !(min > 0)) { this.setState({ showNoteEditor: false }); return; }
+    const prev = this.noteToday();
+    let sum = parseFloat(this.lsGet('sumKm', '0')) || 0;
+    if (prev && prev.km) sum -= prev.km;
+    if (km > 0) sum += km;
+    this.lsSet('sumKm', Math.round(sum * 10) / 10);
+    this.lsSet('note', JSON.stringify({ date: t, km: km > 0 ? km : null, min: min > 0 ? min : null }));
+    this.setState({ showNoteEditor: false });
+  };
+  skipNote = () => this.setState({ showNoteEditor: false });
+  openNote = () => {
+    const n = this.noteToday();
+    this.setState({ showNoteEditor: true, draftKm: n && n.km ? String(n.km) : '', draftMin: n && n.min ? String(n.min) : '' });
+  };
+  onKm = (e) => this.setState({ draftKm: e.target.value });
+  onMin = (e) => this.setState({ draftMin: e.target.value });
+  onFile = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) this.setState({ fileMsg: '「' + f.name + '」を受け取りました(この試作では、解析まで行いません)' });
+    e.target.value = '';
+  };
+
+  bowAt(i) {
+    const t = this.todayKey();
+    if (this.lsGet('last', '') !== t) return;
+    if (this.lsGet('bowed', '') === t) return;
+    this.lsSet('bowed', t); this.lsSet('bowedIdx', i);
+    this.forceUpdate();
+  }
+
+  rng(seedStr) {
+    let h = 2166136261;
+    for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+    let a = h >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  kanjiNum(n) {
+    const d = '〇一二三四五六七八九';
+    if (n < 10) return d[n];
+    if (n === 10) return '十';
+    if (n < 20) return '十' + (n % 10 ? d[n % 10] : '');
+    const t = Math.floor(n / 10), o = n % 10;
+    return d[t] + '十' + (o ? d[o] : '');
+  }
+
+  renderVals() {
+    const TONES = {
+      shu: { bg: '#f1ebdf', paper: '#faf6ec', ink: '#2b2620', sub: '#8b8272', line: 'rgba(43,38,32,.16)', accent: '#b5432a', accentHi: '#cd5a38', accentInk: '#93331f', accentSoft: 'rgba(181,67,42,.35)', accentShadow: 'rgba(147,51,31,.26)', night: '#201f29', nightInk: '#cfc9ba', nightSub: '#8f8a7e', glow: 'rgba(224,138,84,.55)', glowInk: '#e0a878' },
+      sumi: { bg: '#efede8', paper: '#f9f8f4', ink: '#1a1a1a', sub: '#7d7a72', line: 'rgba(20,20,20,.15)', accent: '#9c3524', accentHi: '#b04630', accentInk: '#7d2718', accentSoft: 'rgba(156,53,36,.35)', accentShadow: 'rgba(60,55,50,.28)', night: '#151517', nightInk: '#c9c7c0', nightSub: '#82807a', glow: 'rgba(214,206,186,.4)', glowInk: '#c9bfa4' },
+      akatsuki: { bg: '#f7efe2', paper: '#fdf8ee', ink: '#38302a', sub: '#9a8b78', line: 'rgba(90,66,42,.15)', accent: '#c8703c', accentHi: '#dd8449', accentInk: '#a5552a', accentSoft: 'rgba(200,112,60,.4)', accentShadow: 'rgba(180,110,60,.3)', night: '#2a2637', nightInk: '#d9d0c4', nightSub: '#948b85', glow: 'rgba(240,170,110,.6)', glowInk: '#eab88a' }
+    };
+    const c = TONES[this.tone()] || TONES.shu;
+    const toneVars = '--bg:' + c.bg + ';--paper:' + c.paper + ';--ink:' + c.ink + ';--sub:' + c.sub + ';--line:' + c.line + ';--accent:' + c.accent + ';--accentHi:' + c.accentHi + ';--accentInk:' + c.accentInk + ';--accentSoft:' + c.accentSoft + ';--accentShadow:' + c.accentShadow + ';--night:' + c.night + ';--nightInk:' + c.nightInk + ';--nightSub:' + c.nightSub + ';--glow:' + c.glow + ';--glowInk:' + c.glowInk;
+
+    const t = this.todayKey();
+    const stamped = this.lsGet('last', '') === t;
+    const total = parseInt(this.lsGet('total', '0'), 10) || 0;
+    const sumKm = Math.round(((parseFloat(this.lsGet('sumKm', '0')) || 0)) * 10) / 10;
+    const note = this.noteToday();
+    const baseP = Math.max(0, Math.round(this.props.participants ?? 47));
+    const participantsShown = baseP + (stamped ? 1 : 0);
+    const bowed = this.lsGet('bowed', '') === t;
+    const bowedIdx = parseInt(this.lsGet('bowedIdx', '-1'), 10);
+
+    const r = this.rng(t + '/' + this.tone());
+    const count = Math.min(38, Math.max(6, participantsShown));
+    const dots = [];
+    for (let i = 0; i < count; i++) {
+      const left = Math.min(94, Math.max(5, 50 + (r() - r()) * 46));
+      const top = Math.min(86, Math.max(10, 50 + (r() - r()) * 42));
+      const s = 3 + r() * 3.5;
+      const tw = 2.4 + r() * 3;
+      const isBowed = bowed && i === bowedIdx;
+      const canBow = stamped && !bowed;
+      dots.push({
+        wrap: {
+          position: 'absolute', left: left + '%', top: top + '%',
+          width: '44px', height: '44px', marginLeft: '-22px', marginTop: '-22px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'transparent', border: 0, padding: 0,
+          cursor: canBow ? 'pointer' : 'default'
+        },
+        dot: {
+          display: 'block', width: s + 'px', height: s + 'px', borderRadius: '50%',
+          background: isBowed ? c.glowInk : '#f2e3c4',
+          opacity: stamped ? (isBowed ? 1 : 0.3 + r() * 0.6) : 0.14,
+          boxShadow: isBowed
+            ? '0 0 0 4px rgba(240,190,130,.18), 0 0 16px 5px ' + c.glow
+            : '0 0 ' + Math.round(4 + r() * 7) + 'px ' + Math.round(r() * 2) + 'px rgba(242,227,196,.4)',
+          transition: 'opacity .6s ease, box-shadow .6s ease',
+          animation: isBowed ? 'mkPulse 2.6s ease-in-out infinite' : 'mkTwinkle ' + tw + 's ease-in-out infinite'
+        },
+        tap: () => this.bowAt(i)
+      });
+    }
+
+    let bowCaption;
+    if (!stamped) bowCaption = '走った印を残すと、今日の気配が見えます。';
+    else if (!bowed) bowCaption = '一点にだけ、一日に一度、そっと触れられます。誰か分からない、返せない会釈です。';
+    else bowCaption = 'そっと、会釈を残しました。相手には、灯りがひとつだけ届きます。';
+
+    const parts = t.split('-');
+    const sealY = parts[0].split('').map((ch) => '〇一二三四五六七八九'[+ch]).join('');
+    const sealMD = this.kanjiNum(+parts[1]) + '月' + this.kanjiNum(+parts[2]) + '日';
+
+    const showEditor = stamped && this.state.showNoteEditor;
+    const showSummary = stamped && !showEditor && !!(note && (note.km || note.min));
+    const showLink = stamped && !showEditor && !showSummary;
+    const noteSummary = note ? [note.km ? note.km + ' km' : null, note.min ? note.min + ' 分' : null].filter(Boolean).join(' ・ ') : '';
+
+    return {
+      toneVars,
+      stamped, notStamped: !stamped,
+      total, hasTotal: total > 0, noTotal: total === 0,
+      sumKm, hasSum: sumKm > 0 && total > 0,
+      participantsShown,
+      dots, bowCaption,
+      receivedBow: !!(this.props.receivedBow ?? false),
+      sealY, sealMD,
+      flash: this.state.flash,
+      showEditor, showSummary, showLink, noteSummary,
+      draftKm: this.state.draftKm, draftMin: this.state.draftMin,
+      fileMsg: this.state.fileMsg, hasFileMsg: !!this.state.fileMsg,
+      pressStamp: this.pressStamp, saveNote: this.saveNote, skipNote: this.skipNote,
+      openNote: this.openNote, onKm: this.onKm, onMin: this.onMin, onFile: this.onFile
+    };
+  }
+}
+</script>
+</body>
+</html>

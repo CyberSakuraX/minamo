@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>黙走会 — minamo.run</title>
+<!--
+  黙走会 体験デモ版モックアップ
+  デザインの正: design-reference/MokusoApp.dc.html(暁トーン) / 仕様: docs/01, docs/03
+  デモ専用の要素(本実装では削除・置換する):
+    - 層2の人数は日付シードのダミー生成(本実装は GET /api/today)
+    - 層3の点はすべてタップ可能(本実装はサーバ発行の匿名IDを割り当てる)
+    - フッター最下部の「(デモ用リセット)」「(会釈受信を切替)」
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:            #f7efe2;
+  --paper:         #fdf8ee;
+  --ink:           #38302a;
+  --sub:           #9a8b78;
+  --line:          rgba(90,66,42,.15);
+  --accent:        #c8703c;
+  --accent-hi:     #dd8449;
+  --accent-ink:    #a5552a;
+  --accent-soft:   rgba(200,112,60,.4);
+  --accent-shadow: rgba(180,110,60,.3);
+  --night:         #2a2637;
+  --night-ink:     #d9d0c4;
+  --night-sub:     #948b85;
+  --glow:          rgba(240,170,110,.6);
+  --glow-ink:      #eab88a;
+}
+
+@keyframes mkFlash   { 0%{opacity:0} 14%{opacity:.95} 45%{opacity:.7} 100%{opacity:0} }
+@keyframes mkPulse   { 0%,100%{transform:scale(1);opacity:.85} 50%{transform:scale(1.3);opacity:1} }
+@keyframes mkAppear  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes mkTwinkle { 0%,100%{filter:brightness(.85)} 50%{filter:brightness(1.25)} }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font-family: inherit; }
+
+.page {
+  position: relative;
+  max-width: 460px;
+  margin-inline: auto;
+  min-height: 100vh;
+  padding-bottom: 56px;
+}
+
+/* ---------- ヘッダー ---------- */
+header {
+  position: relative;
+  padding: 76px 28px 0;
+  text-align: center;
+}
+.logo {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 32px; font-weight: 700;
+  letter-spacing: .3em; padding-left: .3em;
+}
+.logo-sub {
+  margin-top: 2px;
+  font-size: 10.5px; letter-spacing: .42em; padding-left: .42em;
+  color: var(--sub);
+}
+.logo-line {
+  margin-top: 16px;
+  font-size: 12px; letter-spacing: .16em;
+  color: var(--sub);
+}
+
+/* ---------- 印(#stamp) ---------- */
+#stamp {
+  position: relative;
+  margin-top: 22px;
+  padding: 14px 0 10px;
+  text-align: center;
+  overflow: hidden;
+}
+.hill { position: absolute; bottom: 0; background: var(--ink); border-radius: 100% 100% 0 0; filter: blur(7px); pointer-events: none; }
+.hill-l { left: -40px; right: 52%; height: 64px; opacity: .06; }
+.hill-r { left: 56%; right: -50px; height: 46px; opacity: .05; }
+.sun-glow {
+  position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%);
+  width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow), transparent 68%);
+  opacity: .5; pointer-events: none;
+}
+.lead {
+  position: relative; margin: 0 0 18px;
+  font-size: 12.5px; letter-spacing: .26em; padding-left: .26em;
+}
+
+#stamp-button-wrap { position: relative; display: flex; justify-content: center; }
+#stamp-button {
+  position: relative;
+  width: 180px; height: 180px; border-radius: 50%; border: 0;
+  cursor: pointer; transform: rotate(-2deg);
+  background: radial-gradient(circle at 38% 30%, var(--accent-hi), var(--accent) 55%, var(--accent-ink) 100%);
+  box-shadow: 0 12px 28px var(--accent-shadow), inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -18px 30px rgba(60,10,0,.16);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  transition: transform .15s ease;
+}
+#stamp-button:active { transform: rotate(-2deg) scale(.96); }
+#stamp-button .ring {
+  position: absolute; inset: 9px; border-radius: 50%;
+  border: 1.5px solid rgba(255,244,230,.5); pointer-events: none;
+}
+#stamp-button .label {
+  writing-mode: vertical-rl; height: 112px;
+  font-size: 23px; font-weight: 600; letter-spacing: .22em;
+  color: #fdf3e4; line-height: 2;
+}
+#stamp-button .once {
+  font-size: 9.5px; letter-spacing: .34em; padding-left: .34em;
+  color: rgba(253,243,228,.78);
+}
+
+#seal-wrap {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  animation: mkAppear .7s ease both;
+}
+.seal {
+  position: relative;
+  width: 180px; height: 180px; border-radius: 50%;
+  transform: rotate(-3.5deg);
+  border: 3px solid var(--accent); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.seal .ring {
+  position: absolute; inset: 8px; border-radius: 50%;
+  border: 1px solid var(--accent-soft); pointer-events: none;
+}
+.seal .moku {
+  writing-mode: vertical-rl;
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 46px; font-weight: 700; letter-spacing: .28em;
+  line-height: 1.1; padding-top: .28em;
+}
+.seal-date {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  writing-mode: vertical-rl; white-space: nowrap;
+  font-size: 10.5px; letter-spacing: .14em; color: var(--accent-ink);
+}
+#seal-y  { right: 26px; }
+#seal-md { left: 26px; }
+.seal-count { font-size: 15px; letter-spacing: .12em; }
+.seal-count b {
+  font-size: 33px; color: var(--accent);
+  padding: 0 6px; font-weight: 500;
+}
+.seal-notes { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+.seal-notes .n1 { font-size: 12px; letter-spacing: .14em; color: var(--sub); white-space: nowrap; }
+.seal-notes .n2 { font-size: 10.5px; letter-spacing: .12em; color: var(--sub); white-space: nowrap; }
+
+/* ---------- 添え書き(#note) ---------- */
+#note-editor {
+  margin: 18px 24px 6px;
+  background: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  animation: mkAppear .6s ease both;
+}
+#note-editor .head { font-size: 13px; letter-spacing: .14em; }
+#note-editor .head small { color: var(--sub); font-size: 11px; }
+.note-row { display: flex; gap: 10px; }
+#note-editor input[type="text"] {
+  flex: 1; min-width: 0;
+  font-size: 17px; padding: 13px 12px;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: rgba(255,255,255,.55); color: var(--ink);
+  outline: none;
+}
+#note-save {
+  flex: 1; font-size: 13.5px; letter-spacing: .22em; padding: 13px 0 13px .22em;
+  border: 0; border-radius: 6px;
+  background: var(--accent); color: #fdf3e4; cursor: pointer;
+}
+#note-save:active { opacity: .85; }
+#note-skip {
+  flex: 1; font-size: 12.5px; letter-spacing: .18em; padding: 13px 0 13px .18em;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: transparent; color: var(--sub); cursor: pointer;
+}
+#note-skip:active { opacity: .7; }
+#note-editor .info {
+  font-size: 10.5px; color: var(--sub); letter-spacing: .08em; text-align: center;
+}
+.file-label {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px dashed var(--line); border-radius: 6px; padding: 13px;
+  font-size: 11.5px; color: var(--sub); letter-spacing: .1em; cursor: pointer;
+}
+#file-msg {
+  font-size: 10.5px; color: var(--accent-ink); text-align: center; letter-spacing: .06em;
+}
+
+#note-summary {
+  margin: 18px 24px 6px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  font-size: 12px; color: var(--sub); letter-spacing: .1em;
+}
+#note-summary .val { color: var(--ink); }
+.text-link {
+  border: 0; background: transparent; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+#note-rewrite { font-size: 11px; letter-spacing: .1em; color: var(--accent-ink); padding: 6px; }
+#note-link { margin: 18px 24px 6px; text-align: center; }
+#note-open { font-size: 11.5px; letter-spacing: .14em; color: var(--sub); padding: 8px; }
+
+/* ---------- 三層カード ---------- */
+.card {
+  margin: 0 20px 16px;
+  background: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 20px 22px;
+}
+#sec01 { margin-top: 26px; }
+.card-head {
+  display: flex; align-items: baseline; gap: 10px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px; margin-bottom: 14px;
+}
+.card-head .num { color: var(--accent); font-size: 14px; letter-spacing: .08em; }
+.card-head .ttl { font-size: 14px; letter-spacing: .14em; }
+.card-head .tag {
+  margin-left: auto; flex: none; white-space: nowrap;
+  font-size: 10px; color: var(--sub); letter-spacing: .14em;
+}
+.footnote {
+  margin-top: 12px;
+  font-size: 10.5px; color: var(--sub); letter-spacing: .08em; line-height: 1.9;
+}
+
+#total-row { display: flex; align-items: baseline; gap: 10px; }
+#total-num { font-size: 38px; color: var(--ink); font-weight: 500; line-height: 1; }
+#total-row .unit { font-size: 13px; letter-spacing: .1em; }
+#total-row .desc { font-size: 11px; color: var(--sub); letter-spacing: .12em; margin-left: 6px; }
+#sum-line { margin-top: 10px; font-size: 11.5px; color: var(--sub); letter-spacing: .1em; }
+#sum-line .val { color: var(--ink); }
+#no-total { font-size: 12.5px; color: var(--sub); letter-spacing: .12em; }
+
+#count-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
+#count-row .lbl { font-size: 13px; letter-spacing: .12em; white-space: nowrap; flex: none; }
+#count-row .grp { display: flex; align-items: baseline; gap: 8px; flex: none; }
+#today-count { font-size: 38px; color: var(--accent); font-weight: 500; line-height: 1; }
+#count-row .unit { font-size: 13px; letter-spacing: .1em; }
+#sec02 .footnote { margin-top: 14px; }
+
+/* ---------- 会釈(#sec03) ---------- */
+#sec03 {
+  margin: 0 20px 8px;
+  background: var(--night); border: 0; border-radius: 8px;
+  padding: 18px 20px 16px;
+  color: var(--night-ink);
+}
+#sec03 .card-head { border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 0; }
+#sec03 .card-head .num { color: var(--glow-ink); }
+#sec03 .card-head .tag { color: var(--night-sub); }
+#bow-banner { display: flex; align-items: center; gap: 10px; padding: 12px 2px 0; }
+#bow-banner .banner-dot {
+  flex: none; width: 9px; height: 9px; border-radius: 50%;
+  background: #f4d9a8;
+  box-shadow: 0 0 12px 4px var(--glow);
+  animation: mkPulse 3s ease-in-out infinite;
+}
+#bow-banner .txt { font-size: 12px; letter-spacing: .1em; }
+#bow-field { position: relative; height: 188px; margin: 6px 0 4px; }
+.dot-tap {
+  position: absolute;
+  width: 44px; height: 44px; margin-left: -22px; margin-top: -22px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: 0; padding: 0;
+}
+.dot {
+  display: block; border-radius: 50%;
+  background: #f2e3c4;
+  transition: opacity .6s ease, box-shadow .6s ease;
+}
+.dot-bowed .dot {
+  background: var(--glow-ink);
+  box-shadow: 0 0 0 4px rgba(240,190,130,.18), 0 0 16px 5px var(--glow) !important;
+  animation: mkPulse 2.6s ease-in-out infinite !important;
+  opacity: 1 !important;
+}
+#bow-caption {
+  font-size: 10.5px; color: var(--night-sub);
+  letter-spacing: .08em; line-height: 1.9; text-align: center;
+}
+
+/* ---------- 風景の複利(層1・提案モック。docs/07 参照) ---------- */
+.sky-dawn {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,196,148,.22), rgba(255,231,203,.10) 45%, transparent 72%);
+}
+.moon {
+  position: absolute; left: 78%; top: 2px; pointer-events: none;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--glow-ink); opacity: .8;
+  box-shadow: 0 0 10px 3px rgba(240,170,110,.3);
+}
+.ridge {
+  position: absolute; bottom: 0; pointer-events: none;
+  background: transparent;
+  border-top: 1px solid var(--ink);
+  border-radius: 100% 100% 0 0;
+  opacity: .16;
+}
+.ridge-l { left: -40px; right: 52%; height: 64px; }
+.ridge-r { left: 56%; right: -50px; height: 46px; }
+.water { position: absolute; left: 10%; right: 10%; bottom: 2px; height: 8px; pointer-events: none; }
+.water::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(240,170,110,.55) 32%, rgba(242,227,196,.65) 50%, rgba(240,170,110,.55) 68%, transparent);
+}
+.water::after {
+  content: ''; position: absolute; left: 28%; right: 28%; top: 4px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(242,227,196,.4), transparent);
+}
+#stamp.dawn .sun-glow { opacity: .8; }
+.grain { position: absolute; border-radius: 50%; background: var(--glow-ink); box-shadow: 0 0 5px rgba(200,112,60,.45); pointer-events: none; }
+
+/* ---------- 憲章 ---------- */
+#charter { margin: 48px 28px 0; }
+#charter h2 {
+  margin: 0; text-align: center;
+  font-size: 14px; font-weight: 600; letter-spacing: .3em; padding-left: .3em;
+}
+#charter ol {
+  list-style: none; margin: 24px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 13px;
+}
+#charter li { display: flex; gap: 12px; }
+#charter li .no {
+  flex: none; color: var(--accent);
+  font-size: 11px; letter-spacing: .08em; padding-top: 3px;
+}
+#charter li .txt { font-size: 12px; line-height: 1.95; letter-spacing: .08em; }
+
+/* ---------- フッター ---------- */
+footer { margin: 52px 28px 0; text-align: center; }
+.nashi { font-size: 10.5px; color: var(--sub); letter-spacing: .12em; line-height: 1.9; }
+.tagline { margin-top: 18px; font-size: 12.5px; letter-spacing: .2em; padding-left: .2em; }
+.copyfree { margin-top: 18px; font-size: 10.5px; color: var(--sub); letter-spacing: .08em; line-height: 1.9; }
+.demo-controls { margin-top: 34px; opacity: .65; }
+.demo-controls button { font-size: 10px; color: var(--sub); padding: 4px; }
+.demo-controls .sep { font-size: 10px; color: var(--sub); }
+
+/* ---------- 明転 ---------- */
+.flash {
+  position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(180deg, rgba(255,196,148,.9), rgba(255,231,203,.6) 45%, rgba(255,250,240,.15));
+  animation: mkFlash 1.25s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash, .dot, .dot-bowed .dot, #bow-banner .banner-dot { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="logo">黙走会</div>
+    <div class="logo-sub">minamo.run</div>
+    <div class="logo-line">各自の場所で、黙って走る。主催者はいない。</div>
+  </header>
+
+  <main>
+
+    <section id="stamp">
+      <!-- 風景の複利(提案モック): 累計日数だけから決定的に描画。休んでも決して後退しない -->
+      <div class="sky-dawn" id="scape-sky" hidden></div>
+      <div class="hill hill-l"></div>
+      <div class="hill hill-r"></div>
+      <div class="sun-glow"></div>
+      <span class="moon" id="scape-moon" hidden></span>
+      <div class="ridge ridge-l" id="scape-ridge-l" hidden></div>
+      <div class="ridge ridge-r" id="scape-ridge-r" hidden></div>
+      <div class="water" id="scape-water" hidden></div>
+      <div id="scape-grains"></div>
+      <p class="lead">今日も、あなたの一歩を。</p>
+
+      <div id="stamp-button-wrap">
+        <button id="stamp-button" type="button">
+          <span class="ring"></span>
+          <span class="label">走った印を押す</span>
+          <span class="once">一日一回まで</span>
+        </button>
+      </div>
+
+      <div id="seal-wrap" hidden>
+        <div class="seal">
+          <span class="ring"></span>
+          <span class="moku">黙走</span>
+          <span class="seal-date" id="seal-y"></span>
+          <span class="seal-date" id="seal-md"></span>
+        </div>
+        <div class="seal-count">これで<b id="seal-total"></b>日目です</div>
+        <div class="seal-notes">
+          <div class="n1">今日は、もう印を残しています</div>
+          <div class="n2">また明日の朝に、お待ちしています。</div>
+        </div>
+      </div>
+    </section>
+
+    <div id="note-editor" hidden>
+      <div class="head">添え書きしますか?<small>(任意)</small></div>
+      <div class="note-row">
+        <input type="text" inputmode="decimal" placeholder="距離(km)" id="in-km">
+        <input type="text" inputmode="decimal" placeholder="時間(分)" id="in-min">
+      </div>
+      <div class="note-row">
+        <button id="note-save" type="button">添える</button>
+        <button id="note-skip" type="button">あとで</button>
+      </div>
+      <div class="info">入力は任意です。空欄のままでもかまいません。</div>
+      <label class="file-label">
+        <input type="file" accept=".gpx,.tcx,.fit" id="in-file" style="display:none">
+        記録ファイルを添える(GPX / TCX / FIT)
+      </label>
+      <div id="file-msg" hidden></div>
+    </div>
+
+    <div id="note-summary" hidden>
+      <span>今日の添え書き:<span class="val" id="note-summary-val"></span></span>
+      <button id="note-rewrite" class="text-link" type="button">書き直す</button>
+    </div>
+
+    <div id="note-link" hidden>
+      <button id="note-open" class="text-link" type="button">添え書きする(任意)</button>
+    </div>
+
+    <section id="sec01" class="card">
+      <div class="card-head">
+        <span class="num">01</span>
+        <span class="ttl">わたしの積み重ね</span>
+        <span class="tag">(非公開)</span>
+      </div>
+      <div id="total-row" hidden>
+        <span id="total-num"></span>
+        <span class="unit">日</span>
+        <span class="desc">総走行日数(累計のみ)</span>
+      </div>
+      <div id="sum-line" hidden>添え書きの累計:<span class="val" id="sum-num"></span> km</div>
+      <div id="no-total" hidden>まだ、印はありません。最初の一歩から始まります。</div>
+      <div class="footnote">あなたにだけ見える、静かな累積です。休んでも、減りません。</div>
+    </section>
+
+    <section id="sec02" class="card">
+      <div class="card-head">
+        <span class="num">02</span>
+        <span class="ttl">今日の静かなつながり</span>
+        <span class="tag">(匿名)</span>
+      </div>
+      <div id="count-row">
+        <span class="lbl">今日、共に走った人</span>
+        <span class="grp">
+          <span id="today-count"></span>
+          <span class="unit">人</span>
+        </span>
+      </div>
+      <div class="footnote">誰のものでもない数字です。明日には、またゼロから始まります。</div>
+    </section>
+
+    <section id="sec03">
+      <div class="card-head">
+        <span class="num">03</span>
+        <span class="ttl">会釈</span>
+        <span class="tag">(匿名・一方向)</span>
+      </div>
+      <div id="bow-banner" hidden>
+        <span class="banner-dot"></span>
+        <span class="txt">今日のあなたの走りに、誰かが会釈しました。</span>
+      </div>
+      <div id="bow-field"></div>
+      <div id="bow-caption"></div>
+    </section>
+
+    <section id="charter">
+      <h2>黙走会の憲章</h2>
+      <ol>
+        <li><span class="no">一</span><span class="txt">いつ走るかは、自分で決める。毎日でも、週に一度でも。集合場所も、集合時刻もない</span></li>
+        <li><span class="no">二</span><span class="txt">距離もペースも自由。歩いてもいい。休んでもいい。やめてもいい</span></li>
+        <li><span class="no">三</span><span class="txt">会話はしない。走った証は、ボタンひとつ、または #黙走会 の一投稿のみ</span></li>
+        <li><span class="no">四</span><span class="txt">自己紹介は不要。名乗らなくていい。誰であるかより、走ったかどうか</span></li>
+        <li><span class="no">五</span><span class="txt">勧誘・宣伝・営業のための接触は存在しない。この会には連絡手段がないため</span></li>
+        <li><span class="no">六</span><span class="txt">主催者はいない。参加者だけがいる</span></li>
+        <li><span class="no">七</span><span class="txt">この型は誰のものでもない。誰でも、どこでも、許可なく開催してよい</span></li>
+      </ol>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="nashi">連絡手段なし・ランキングなし・ログインなし・広告なし・課金なし</div>
+    <div class="tagline">走ったことは、誰かの気配になる。</div>
+    <div class="copyfree">このページごと複製して、あなたの街の黙走会にしてよい。<br>MIT License</div>
+    <!-- デモ専用ここから(本実装では削除する) -->
+    <div class="demo-controls">
+      <button id="demo-reset" class="text-link" type="button">(デモ用リセット)</button>
+      <span class="sep">・</span>
+      <button id="demo-bow" class="text-link" type="button">(会釈受信を切替)</button>
+    </div>
+    <div class="demo-controls" id="demo-days">
+      <span class="sep">積み重ねを試す:</span>
+      <button class="text-link" type="button" data-days="1">1</button>
+      <button class="text-link" type="button" data-days="7">7</button>
+      <button class="text-link" type="button" data-days="30">30</button>
+      <button class="text-link" type="button" data-days="90">90</button>
+      <button class="text-link" type="button" data-days="240">240</button>
+      <button class="text-link" type="button" data-days="365">365</button>
+    </div>
+    <!-- デモ専用ここまで -->
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 状態(localStorage / docs/01 §8) ---------- */
+  var mem = {}; // localStorage不可(プライベートモード等)のときのその場しのぎ
+  function lsGet(k, d) {
+    try { var v = localStorage.getItem('minamo.' + k); if (v != null) return v; } catch (e) {}
+    return (k in mem) ? mem[k] : d;
+  }
+  function lsSet(k, v) {
+    mem[k] = String(v);
+    try { localStorage.setItem('minamo.' + k, String(v)); } catch (e) {}
+  }
+  function lsDel(k) {
+    delete mem[k];
+    try { localStorage.removeItem('minamo.' + k); } catch (e) {}
+  }
+
+  function todayKey() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date());
+  }
+
+  function noteToday() {
+    try {
+      var n = JSON.parse(lsGet('note', 'null'));
+      return (n && n.date === todayKey()) ? n : null;
+    } catch (e) { return null; }
+  }
+  function bowedToday() {
+    try {
+      var b = JSON.parse(lsGet('bowed', 'null'));
+      return (b && b.date === todayKey()) ? b : null;
+    } catch (e) { return null; }
+  }
+
+  /* ---------- 決定的乱数(FNV-1a → mulberry32) ---------- */
+  function rng(seedStr) {
+    var h = 2166136261;
+    for (var i = 0; i < seedStr.length; i++) {
+      h ^= seedStr.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    var a = h >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ---------- 落款の漢数字 ---------- */
+  function kanjiNum(n) {
+    var d = '〇一二三四五六七八九';
+    if (n < 10) return d[n];
+    if (n === 10) return '十';
+    if (n < 20) return '十' + (n % 10 ? d[n % 10] : '');
+    var t = Math.floor(n / 10), o = n % 10;
+    return d[t] + '十' + (o ? d[o] : '');
+  }
+
+  /* ---------- デモ用ダミー人数(本実装は GET /api/today に置換) ---------- */
+  function demoBaseParticipants() {
+    var r = rng(todayKey() + '/demo-participants');
+    return 20 + Math.floor(r() * 41); // 20〜60人・同じ日は同じ数字
+  }
+
+  /* ---------- 要素 ---------- */
+  var $ = function (id) { return document.getElementById(id); };
+  var elStampBtn = $('stamp-button'), elStampWrap = $('stamp-button-wrap'), elSealWrap = $('seal-wrap');
+  var elSealY = $('seal-y'), elSealMD = $('seal-md'), elSealTotal = $('seal-total');
+  var elEditor = $('note-editor'), elSummary = $('note-summary'), elLink = $('note-link');
+  var elSummaryVal = $('note-summary-val'), elInKm = $('in-km'), elInMin = $('in-min');
+  var elFileMsg = $('file-msg');
+  var elTotalRow = $('total-row'), elTotalNum = $('total-num');
+  var elSumLine = $('sum-line'), elSumNum = $('sum-num'), elNoTotal = $('no-total');
+  var elTodayCount = $('today-count');
+  var elBanner = $('bow-banner'), elField = $('bow-field'), elCaption = $('bow-caption');
+
+  var showEditor = false;
+
+  /* ---------- 風景の複利(提案モック): total のみから決定的に描画(docs/07) ---------- */
+  var GRAIN_CAP = 24;
+  function renderScape(total) {
+    $('scape-sky').hidden = !(total >= 365);
+    $('scape-moon').hidden = !(total >= 90);
+    $('scape-ridge-l').hidden = !(total >= 30);
+    $('scape-ridge-r').hidden = !(total >= 30);
+    $('scape-water').hidden = !(total >= 240);
+    document.getElementById('stamp').classList.toggle('dawn', total >= 365);
+
+    var wrap = $('scape-grains');
+    wrap.innerHTML = '';
+    var n = Math.min(total, GRAIN_CAP);
+    var r = rng('minamo-grains'); // 固定シード: n粒目の位置は永久に同じ(昨日の粒は今日も同じ場所)
+    for (var i = 0; i < n; i++) {
+      var left = 6 + r() * 88;
+      var bottom = 6 + r() * 52;
+      var s = 1.5 + r() * 1.7;
+      var op = 0.55 + r() * 0.3; // 乱数の消費順は変えない(粒の位置を動かさないため)
+      var g = document.createElement('span');
+      g.className = 'grain';
+      g.style.left = left.toFixed(2) + '%';
+      g.style.bottom = bottom.toFixed(1) + 'px';
+      g.style.width = s.toFixed(2) + 'px';
+      g.style.height = s.toFixed(2) + 'px';
+      g.style.opacity = op.toFixed(2);
+      wrap.appendChild(g);
+    }
+  }
+
+  /* ---------- 描画 ---------- */
+  function render() {
+    var t = todayKey();
+    var stamped = lsGet('last', '') === t;
+    var total = parseInt(lsGet('total', '0'), 10) || 0;
+    var sumKm = Math.round((parseFloat(lsGet('sumKm', '0')) || 0) * 10) / 10;
+    var note = noteToday();
+    var bowed = bowedToday();
+
+    /* 印 */
+    elStampWrap.hidden = stamped;
+    elSealWrap.hidden = !stamped;
+    if (stamped) {
+      var parts = t.split('-');
+      elSealY.textContent = parts[0].split('').map(function (ch) { return '〇一二三四五六七八九'[+ch]; }).join('');
+      elSealMD.textContent = kanjiNum(+parts[1]) + '月' + kanjiNum(+parts[2]) + '日';
+      elSealTotal.textContent = total;
+
+      // 印影の日ごとのゆらぎ(日付シード・同じ日は誰の印影も同じゆらぎ / docs/07 §4)
+      var w = rng('minamo-seal/' + t);
+      var sealEl = document.querySelector('.seal');
+      sealEl.style.transform = 'rotate(' + (-(2.5 + w() * 2)).toFixed(2) + 'deg)';
+      sealEl.querySelector('.ring').style.inset = (7 + Math.round(w() * 3)) + 'px';
+      sealEl.style.opacity = (0.94 + w() * 0.06).toFixed(3); // 下限0.94: 「印の薄れ」に見せない
+    }
+
+    /* 添え書き 3態 */
+    var hasNote = !!(note && (note.km || note.min));
+    var editorOn = stamped && showEditor;
+    elEditor.hidden = !editorOn;
+    elSummary.hidden = !(stamped && !editorOn && hasNote);
+    elLink.hidden = !(stamped && !editorOn && !hasNote);
+    if (hasNote) {
+      elSummaryVal.textContent = [
+        note.km ? note.km + ' km' : null,
+        note.min ? note.min + ' 分' : null
+      ].filter(Boolean).join(' ・ ');
+    }
+
+    /* 層1 */
+    elTotalRow.hidden = !(total > 0);
+    elNoTotal.hidden = total > 0;
+    elTotalNum.textContent = total;
+    elSumLine.hidden = !(total > 0 && sumKm > 0);
+    elSumNum.textContent = sumKm;
+
+    /* 風景の複利(提案モック) */
+    renderScape(total);
+
+    /* 層2(デモ: ダミー人数) */
+    var count = demoBaseParticipants() + (stamped ? 1 : 0);
+    elTodayCount.textContent = count;
+
+    /* 層3 */
+    elBanner.hidden = lsGet('demoBow', '') !== '1';
+    renderDots(t, stamped, count, bowed);
+    if (!stamped) {
+      elCaption.textContent = '走った印を残すと、今日の気配が見えます。';
+    } else if (!bowed) {
+      elCaption.textContent = '一点にだけ、一日に一度、そっと触れられます。誰か分からない、返せない会釈です。';
+    } else {
+      elCaption.textContent = 'そっと、会釈を残しました。相手には、灯りがひとつだけ届きます。';
+    }
+  }
+
+  function renderDots(t, stamped, count, bowed) {
+    var r = rng(t);
+    var n = Math.min(38, Math.max(6, count));
+    var canBow = stamped && !bowed;
+    elField.innerHTML = '';
+    for (var i = 0; i < n; i++) {
+      // 乱数は状態に関わらず毎点8回消費し、押印・会釈で星空が動かないようにする
+      var left = Math.min(94, Math.max(5, 50 + (r() - r()) * 46));
+      var top = Math.min(86, Math.max(10, 50 + (r() - r()) * 42));
+      var s = 3 + r() * 3.5;
+      var tw = 2.4 + r() * 3;
+      var glowSize = Math.round(4 + r() * 7);
+      var glowSpread = Math.round(r() * 2);
+      var op = 0.3 + r() * 0.6;
+      var isBowed = !!(bowed && i === bowed.idx);
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dot-tap' + (isBowed ? ' dot-bowed' : '');
+      btn.style.left = left + '%';
+      btn.style.top = top + '%';
+      btn.style.cursor = canBow ? 'pointer' : 'default';
+      btn.setAttribute('aria-label', '光の点');
+      if (canBow) {
+        btn.addEventListener('click', (function (idx) {
+          return function () { bowAt(idx); };
+        })(i));
+      }
+
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.width = s + 'px';
+      dot.style.height = s + 'px';
+      dot.style.opacity = stamped ? (isBowed ? 1 : op) : 0.14;
+      dot.style.boxShadow = '0 0 ' + glowSize + 'px ' + glowSpread + 'px rgba(242,227,196,.4)';
+      dot.style.animation = 'mkTwinkle ' + tw.toFixed(2) + 's ease-in-out infinite';
+
+      btn.appendChild(dot);
+      elField.appendChild(btn);
+    }
+  }
+
+  /* ---------- 押印 ---------- */
+  function pressStamp() {
+    var t = todayKey();
+    if (lsGet('last', '') === t) return;
+    var total = (parseInt(lsGet('total', '0'), 10) || 0) + 1;
+    lsSet('total', total);
+    lsSet('last', t);
+    flash();
+    showEditor = true;
+    elInKm.value = '';
+    elInMin.value = '';
+    setFileMsg('');
+    render();
+  }
+
+  var flashTimer;
+  function flash() {
+    var el = document.createElement('div');
+    el.className = 'flash';
+    document.body.appendChild(el);
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () { el.remove(); }, 1350);
+  }
+
+  /* ---------- 添え書き ---------- */
+  function saveNote() {
+    var t = todayKey();
+    var km = parseFloat(elInKm.value);
+    var min = parseFloat(elInMin.value);
+    if (!(km > 0) && !(min > 0)) { showEditor = false; render(); return; }
+    var prev = noteToday();
+    var sum = parseFloat(lsGet('sumKm', '0')) || 0;
+    if (prev && prev.km) sum -= prev.km;
+    if (km > 0) sum += km;
+    lsSet('sumKm', Math.round(sum * 10) / 10);
+    lsSet('note', JSON.stringify({ date: t, km: km > 0 ? km : null, min: min > 0 ? min : null }));
+    showEditor = false;
+    render();
+  }
+  function skipNote() { showEditor = false; render(); }
+  function openNote() {
+    var n = noteToday();
+    elInKm.value = n && n.km ? String(n.km) : '';
+    elInMin.value = n && n.min ? String(n.min) : '';
+    setFileMsg('');
+    showEditor = true;
+    render();
+  }
+  function setFileMsg(msg) {
+    elFileMsg.textContent = msg;
+    elFileMsg.hidden = !msg;
+  }
+  function onFile(e) {
+    var f = e.target.files && e.target.files[0];
+    if (f) setFileMsg('「' + f.name + '」を受け取りました(この試作では、解析まで行いません)');
+    e.target.value = '';
+  }
+
+  /* ---------- 会釈 ---------- */
+  function bowAt(i) {
+    var t = todayKey();
+    if (lsGet('last', '') !== t) return;
+    if (bowedToday()) return;
+    lsSet('bowed', JSON.stringify({ date: t, idx: i }));
+    render();
+  }
+
+  /* ---------- デモ操作(本実装では削除) ---------- */
+  function demoReset() {
+    ['total', 'last', 'note', 'sumKm', 'bowed', 'demoBow'].forEach(lsDel);
+    location.reload();
+  }
+  function demoToggleBow() {
+    if (lsGet('demoBow', '') === '1') lsDel('demoBow'); else lsSet('demoBow', '1');
+    render();
+  }
+
+  /* ---------- イベント ---------- */
+  elStampBtn.addEventListener('click', pressStamp);
+  $('note-save').addEventListener('click', saveNote);
+  $('note-skip').addEventListener('click', skipNote);
+  $('note-rewrite').addEventListener('click', openNote);
+  $('note-open').addEventListener('click', openNote);
+  $('in-file').addEventListener('change', onFile);
+  $('demo-reset').addEventListener('click', demoReset);
+  $('demo-bow').addEventListener('click', demoToggleBow);
+  Array.prototype.forEach.call(document.querySelectorAll('#demo-days button'), function (b) {
+    b.addEventListener('click', function () {
+      lsSet('total', parseInt(b.getAttribute('data-days'), 10));
+      lsSet('last', todayKey()); // 押印済み状態にして印影とともに眺められるように
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

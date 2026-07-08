@@ -1,0 +1,11 @@
+name = "minamo-api"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+workers_dev = true
+
+# [observability] / [triggers] / [vars] は書かない(docs/02 §9 — ログ収集・cron・トークンを持たない)
+
+[[kv_namespaces]]
+binding = "MINAMO_KV"
+# 本番ID(2026-07-08 `wrangler kv namespace create MINAMO_KV` で作成)
+id = "0482f756103f4a0c8b50558f54d3fd97"

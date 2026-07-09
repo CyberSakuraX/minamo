@@ -46,6 +46,14 @@ function json(request, body, status, extra) {
   });
 }
 
+// 複製ページ(憲章7条)からの書き込みが元の水面に混ざらないための境界。
+// CORSはレスポンスを読ませないだけでPOST自体は届くため、サーバー側でも見る。
+// Originヘッダなし(curl等の検証用途)は通す — ブラウザ外はレート制限とTTLで足りる
+function foreignBrowserOrigin(request) {
+  const origin = request.headers.get("Origin");
+  return origin !== null && !ALLOWED_ORIGINS.includes(origin);
+}
+
 function makeAnonId() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   const buf = new Uint8Array(12);
@@ -68,6 +76,7 @@ function rateLimited(request) {
 }
 
 async function stamp(request, env) {
+  if (foreignBrowserOrigin(request)) return json(request, { ok: false }, 403);
   if (rateLimited(request)) return json(request, { ok: false }, 429);
   const date = jstDate(0);
   const anonId = makeAnonId();
@@ -100,6 +109,7 @@ async function today(request, env) {
 }
 
 async function bowSend(request, env) {
+  if (foreignBrowserOrigin(request)) return json(request, { ok: false }, 403);
   if (rateLimited(request)) return json(request, { ok: false }, 429);
   const ct = request.headers.get("Content-Type") || "";
   if (!ct.includes("application/json")) return json(request, { ok: false }, 400);

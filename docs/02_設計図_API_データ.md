@@ -106,6 +106,11 @@ const ALLOWED_ORIGINS = [
 - リクエストの `Origin` が一致した場合のみ `Access-Control-Allow-Origin: <そのorigin>` を返す
 - `Access-Control-Allow-Methods: GET, POST, OPTIONS` / `Access-Control-Allow-Headers: Content-Type` / `Access-Control-Max-Age: 86400`
 - **`Allow-Credentials` は付けない**（Cookieゼロ原則）
+- **書き込み系(POST 2種)はサーバー側でも Origin を検証する**(2026-07-09 追加):
+  `Origin` ヘッダが存在し、かつ ALLOWED_ORIGINS 外なら 403。
+  CORSはブラウザにレスポンスを読ませないだけでシンプルPOST自体は届くため、
+  複製ページ(憲章7条)の押印・会釈が元の水面に混ざらないための境界をサーバー側にも持つ。
+  `Origin` なし(curl 等の検証用途)は通す — ブラウザ外はレート制限とTTLで足りる
 
 ## 6. 簡易レート制限とプライバシー（実装ルール）
 

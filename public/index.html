@@ -796,6 +796,8 @@ footer { margin: 52px 28px 0; text-align: center; }
     elInKm.value = '';
     elInMin.value = '';
     setFileMsg('');
+    // フラグメント経由の保留値があれば、クリアの後に流し込む(前日残留値と混ざらない)
+    if (pendingNote) { prefillNote(pendingNote.km, pendingNote.min); pendingNote = null; }
     render();
     apiStamp();
   }
@@ -837,11 +839,171 @@ footer { margin: 52px 28px 0; text-align: center; }
     elFileMsg.textContent = msg;
     elFileMsg.hidden = !msg;
   }
+  /* ---------- ファイル取り込み(解析は100%クライアントサイド・プリフィルのみ / docs/01 §7) ---------- */
+  var FILE_ERR = 'このファイルは読めませんでした。手で書き添えることもできます。'; // エラー文言はこの1種類のみ
+
+  // 抽出値を入力欄へ転記する。値のある側だけ上書きし、丸め(km 0.1刻み / 分 整数)はここに集約。
+  // 丸め後 0 になる値は転記しない(「0」の見た目と saveNote の無視がちぐはぐになるため)
+  function prefillNote(km, min) {
+    if (km != null) {
+      var k = Math.round(km * 10) / 10;
+      if (k > 0) elInKm.value = String(k);
+    }
+    if (min != null) {
+      var m = Math.round(min);
+      if (m > 0) elInMin.value = String(m);
+    }
+  }
+
+  // 2点間の球面距離(km)。直前1点との逐次計算にのみ使い、ルートを配列に溜めない
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    var rad = Math.PI / 180;
+    var dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 2 * 6371 * Math.asin(Math.sqrt(a));
+  }
+
+  // el 直下の子要素から localName が name の最初のもののテキストを返す(なければ null)。
+  // TCX の Lap 直下と Trackpoint 配下の同名要素(DistanceMeters)を混同しないための直下限定
+  function childText(el, name) {
+    for (var c = el.firstElementChild; c; c = c.nextElementSibling) {
+      if (c.localName === name) return c.textContent;
+    }
+    return null;
+  }
+
+  function parseXml(text) {
+    var doc = new DOMParser().parseFromString(text, 'application/xml');
+    return doc.getElementsByTagNameNS('*', 'parsererror').length ? null : doc;
+  }
+
+  // GPX: 距離は trkpt のハバーサイン逐次積算(trkseg 境界でリセットし、区間ギャップを数えない)。
+  // 時間は trkpt 直下の <time> の最初と最後の差(<metadata><time> を拾わない)
+  function parseGpx(doc) {
+    var km = 0, firstT = null, lastT = null;
+    var segs = doc.getElementsByTagNameNS('*', 'trkseg');
+    for (var i = 0; i < segs.length; i++) {
+      var plat = null, plon = null; // 保持するのは直前1点のみ
+      var pts = segs[i].getElementsByTagNameNS('*', 'trkpt');
+      for (var j = 0; j < pts.length; j++) {
+        var lat = parseFloat(pts[j].getAttribute('lat'));
+        var lon = parseFloat(pts[j].getAttribute('lon'));
+        if (!isFinite(lat) || !isFinite(lon)) continue;
+        if (plat != null) km += haversineKm(plat, plon, lat, lon);
+        plat = lat; plon = lon;
+        var tm = childText(pts[j], 'time');
+        var ms = tm ? Date.parse(tm) : NaN;
+        if (isFinite(ms)) {
+          if (firstT == null) firstT = ms;
+          lastT = ms;
+        }
+      }
+    }
+    var min = (firstT != null && lastT > firstT) ? (lastT - firstT) / 60000 : null;
+    if (!(km > 0)) km = null;
+    return (km == null && min == null) ? null : { km: km, min: min };
+  }
+
+  // TCX: Lap 直下の DistanceMeters / TotalTimeSeconds を合計。
+  // 距離が取れなければ Trackpoint の累積 DistanceMeters を末尾から探す(docs/01 §7)
+  function parseTcx(doc) {
+    var m = 0, s = 0;
+    var laps = doc.getElementsByTagNameNS('*', 'Lap');
+    for (var i = 0; i < laps.length; i++) {
+      var dm = parseFloat(childText(laps[i], 'DistanceMeters'));
+      var ts = parseFloat(childText(laps[i], 'TotalTimeSeconds'));
+      if (dm > 0) m += dm;
+      if (ts > 0) s += ts;
+    }
+    if (!(m > 0)) {
+      var pts = doc.getElementsByTagNameNS('*', 'Trackpoint');
+      for (var j = pts.length - 1; j >= 0; j--) {
+        var v = parseFloat(childText(pts[j], 'DistanceMeters'));
+        if (v > 0) { m = v; break; }
+      }
+    }
+    var km = m > 0 ? m / 1000 : null;
+    var min = s > 0 ? s / 60 : null;
+    return (km == null && min == null) ? null : { km: km, min: min };
+  }
+
+  // 入口。拡張子 .fit のみバイナリ経路、それ以外は XML のルート要素で GPX / TCX を判別する
+  // (D&D では拡張子と中身が食い違うファイルも飛んでくるため、拡張子を信用しない)
+  function readRecordFile(file) {
+    setFileMsg('');
+    if (!file || file.size > 25 * 1024 * 1024) { setFileMsg(FILE_ERR); return; } // 巨大ファイルでタブを固めない
+    if (/\.fit$/i.test(file.name || '')) { readFit(file); return; }
+    file.text().then(function (text) {
+      var doc = parseXml(text);
+      var root = doc ? doc.documentElement.localName : '';
+      applyExtract(root === 'gpx' ? parseGpx(doc) :
+                   root === 'TrainingCenterDatabase' ? parseTcx(doc) : null);
+    }).catch(function () { setFileMsg(FILE_ERR); });
+  }
+
+  // fit-reader.js の遅延読み込み。file:// の複製でも動くよう classic script で注入する
+  // (意図は docs/01 §7 の動的importと同じ = 初回の .fit 選択まで1バイトも読ませない)
+  var fitReaderLoading = null;
+  function loadFitReader() {
+    if (window.minamoReadFit) return Promise.resolve();
+    if (!fitReaderLoading) {
+      fitReaderLoading = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'js/fit-reader.js';
+        s.onload = resolve;
+        s.onerror = function () { fitReaderLoading = null; reject(new Error()); };
+        document.head.appendChild(s);
+      });
+    }
+    return fitReaderLoading;
+  }
+
+  function readFit(file) {
+    loadFitReader()
+      .then(function () { return file.arrayBuffer(); })
+      .then(function (buf) { applyExtract(window.minamoReadFit(buf)); })
+      .catch(function () { setFileMsg(FILE_ERR); });
+  }
+
+  // 抽出結果の出口。取れた側をプリフィルするだけで、保存は「添える」(saveNote)まで起きない
+  function applyExtract(r) {
+    if (!r || (r.km == null && r.min == null)) { setFileMsg(FILE_ERR); return; }
+    prefillNote(r.km, r.min);
+  }
+
   function onFile(e) {
-    // Step 3 でクライアントサイド解析(GPX/TCX/FIT → 距離・時間のプリフィル)に置き換える
     var f = e.target.files && e.target.files[0];
-    if (f) setFileMsg('「' + f.name + '」を受け取りました(この試作では、解析まで行いません)');
-    e.target.value = '';
+    e.target.value = ''; // 同じファイルの選び直しでも change が発火するように
+    if (f) readRecordFile(f);
+  }
+
+  /* ---------- URLフラグメント受け口(iOSショートカット #d=5.2&t=31 / docs/01 §7) ---------- */
+  var pendingNote = null; // 未押印時の保留値。押印直後のエディタに流し込む(ページを閉じれば消える)
+
+  // location.hash に d / t があれば読み取り、URLから即座に消して返す(有効値がなければ null)
+  function readFragment() {
+    var h = location.hash;
+    if (h.length < 2) return null;
+    var p = new URLSearchParams(h.slice(1));
+    if (!p.has('d') && !p.has('t')) return null; // ページ内アンカー等は素通し
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    var km = parseFloat(p.get('d'));
+    var min = parseFloat(p.get('t'));
+    km = (isFinite(km) && km > 0) ? km : null;
+    min = (isFinite(min) && min > 0) ? min : null;
+    return (km == null && min == null) ? null : { km: km, min: min };
+  }
+
+  function applyFragment() {
+    var frag = readFragment();
+    if (!frag) return;
+    if (lsGet('last', '') === todayKey()) {
+      openNote();                     // 既存の当日値を敷いてから(片値のフラグメントでも他方が消えない)
+      prefillNote(frag.km, frag.min); // フラグメント値で上書き
+    } else {
+      pendingNote = frag; // 押印を静かに待つ
+    }
   }
 
   /* ---------- 会釈 ---------- */
@@ -871,8 +1033,21 @@ footer { margin: 52px 28px 0; text-align: center; }
   $('note-rewrite').addEventListener('click', openNote);
   $('note-open').addEventListener('click', openNote);
   $('in-file').addEventListener('change', onFile);
+  var elFileLabel = document.querySelector('.file-label');
+  elFileLabel.addEventListener('dragover', function (e) { e.preventDefault(); });
+  elFileLabel.addEventListener('drop', function (e) {
+    e.preventDefault();
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) readRecordFile(f);
+  });
+  // ラベル外への誤ドロップでページごとファイル表示に遷移しないためのガード(表示は何も変えない)
+  document.addEventListener('dragover', function (e) { e.preventDefault(); });
+  document.addEventListener('drop', function (e) { e.preventDefault(); });
+  // iOSショートカットが既存タブを再利用したとき(リロードなしのハッシュ変更)にも受け口が働くように
+  window.addEventListener('hashchange', applyFragment);
 
   /* ---------- 起動 ---------- */
+  applyFragment(); // フラグメントは最初の描画前に読み、URLから即消す
   render();
   if (API_BASE) {
     // 押印済みなのに匿名IDが今日のものでない場合、1回だけ静かに再送(docs/02 §8)

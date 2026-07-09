@@ -81,6 +81,11 @@
 /* 孤立文字(「〜もい/い」等)を避ける。未対応ブラウザでは単に無視される */
 #charter li .txt, .footnote, .nashi, .copyfree, #bow-caption, .logo-line { text-wrap: pretty; }
 
+/* キーボード操作時にだけ現れる輪(タッチ・マウスには一切出ない) */
+button:focus-visible, .file-label:focus-within { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
+#note-editor input[type="text"]:focus-visible { outline: 2px solid var(--accent-soft); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -479,7 +484,7 @@ footer { margin: 52px 28px 0; text-align: center; }
       </div>
       <div class="info">入力は任意です。空欄のままでもかまいません。</div>
       <label class="file-label">
-        <input type="file" accept=".gpx,.tcx,.fit" id="in-file" style="display:none">
+        <input type="file" accept=".gpx,.tcx,.fit" id="in-file" class="visually-hidden">
         記録ファイルを添える(GPX / TCX / FIT)
       </label>
       <div id="file-msg" hidden></div>

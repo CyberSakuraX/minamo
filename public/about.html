@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f7efe2">
+<script>
+/* 未明の紙の判定(index.html と同じ規則): OSダークは常に尊重 + 夜18時〜翌5時はページにも夜が来る */
+(function () {
+  var night = false;
+  try {
+    var h = new Date().getHours();
+    night = (h >= 18 || h < 5) || matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch (e) {}
+  if (night) {
+    var root = document.documentElement;
+    root.setAttribute('data-night', '');
+    root.style.colorScheme = 'dark';
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = '#211e23';
+  }
+})();
+</script>
+<title>黙走会 — この会について</title>
+<meta name="description" content="黙走会は、誰も運営しないランニングコミュニティの型です。走った日に、走った証を一枚の頁に静かに残すだけ。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><g transform='rotate(-8 16 16)'><circle cx='16' cy='16' r='12.5' fill='none' stroke='%23c8703c' stroke-width='2.4'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23c8703c' stroke-width='.8' opacity='.5'/></g><circle cx='26.5' cy='6' r='2' fill='%23eab88a'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7efe2; --paper: #fdf8ee; --ink: #38302a; --sub: #9a8b78;
+  --line: rgba(90,66,42,.15); --accent: #c8703c; --accent-ink: #a5552a;
+}
+:root[data-night] {
+  --bg: #211e23; --paper: #29252b; --ink: #e6ddcd; --sub: #998c7c;
+  --line: rgba(230,221,205,.14); --accent-ink: #d98a55;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 460px; margin-inline: auto; padding: 68px 32px 80px; }
+p { text-wrap: pretty; }
+
+.logo { font-family: 'Klee One', cursive; font-size: 22px; font-weight: 600; letter-spacing: .2em; }
+.logo a { color: inherit; text-decoration: none; }
+.pagename { margin-top: 6px; font-size: 11px; letter-spacing: .34em; color: var(--sub); }
+
+.intro { margin: 40px 0 0; font-size: 13px; line-height: 2.4; letter-spacing: .06em; }
+
+h2 {
+  margin: 48px 0 14px; font-size: 12.5px; font-weight: 600;
+  letter-spacing: .26em; color: var(--accent-ink);
+}
+p { margin: 0 0 12px; font-size: 12.5px; line-height: 2.2; letter-spacing: .05em; }
+.layer { margin: 0 0 18px; }
+.layer .name { font-size: 12.5px; letter-spacing: .14em; margin-bottom: 4px; }
+.layer .name small { color: var(--sub); font-size: 10px; letter-spacing: .14em; margin-left: 8px; }
+.layer p { font-size: 12px; color: var(--ink); opacity: .92; margin-bottom: 0; }
+.quiet { color: var(--sub); font-size: 11.5px; }
+
+a.ext { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; }
+.back {
+  display: inline-block; margin-top: 56px;
+  font-size: 11.5px; letter-spacing: .14em; color: var(--sub);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="logo"><a href="./">黙走会</a></div>
+  <div class="pagename">この会について</div>
+
+  <p class="intro">
+    黙走会は、誰も運営しないランニングコミュニティの「型」です。
+    主催者はいません。集合場所も、集合時刻もありません。
+    毎日走る人は毎日、週にいちどの人は週にいちど。
+    走った日に、走った証をあの一枚に静かに残す。それだけの場所です。
+  </p>
+
+  <h2>三つの層</h2>
+  <div class="layer">
+    <div class="name">わたしの積み重ね<small>非公開</small></div>
+    <p>走った印は、あなたの端末の中だけに残ります。距離や時間を書き添えても、どこにも送られません。
+    累計だけが増えていき、休んでも減りません。</p>
+  </div>
+  <div class="layer">
+    <div class="name">今日の静かなつながり<small>匿名</small></div>
+    <p>印を押すと「今日、共に走った人」の数がひとつ増えます。誰の数字でもない、今日だけの数。
+    明日には、またゼロから始まります。</p>
+  </div>
+  <div class="layer">
+    <div class="name">会釈<small>匿名・一方向</small></div>
+    <p>今日走っただれかの光に、一日に一度だけ、そっと触れられます。
+    誰からかは伝わらない、返せない会釈です。翌日にはすべて消えます。</p>
+  </div>
+
+  <h2>ないもの</h2>
+  <p>連絡手段・ランキング・ログイン・広告・課金。この会には、どれもありません。
+  つながるために、増やさない。比較ではなく、気配。</p>
+  <p class="quiet">走った記録がネットワークに出ることはありません。日々の人数と会釈は匿名のまま、翌日に消えます。</p>
+
+  <h2>名について</h2>
+  <p>黙走(もくそう)は行為の名。みなも(minamo)は、その積み重ねが映る風景の名です。
+  黙って走った一日が一粒の光になり、粒が集まって、水面になる。</p>
+
+  <h2>複製自由</h2>
+  <p>この型は誰のものでもありません。
+  このページごと複製して、あなたの街の黙走会にしてかまいません。</p>
+  <p class="quiet">ソースコードは <a class="ext" href="https://github.com/CyberSakuraX/minamo">GitHub</a> にあります(MIT License)。</p>
+
+  <a class="back" href="./">← 頁にもどる</a>
+
+</div>
+</body>
+</html>

@@ -24,7 +24,8 @@ colors:
     glow: "rgba(240,170,110,.6)"   # 朝焼け・会釈の灯
     glow-ink: "#eab88a"
     field: "rgba(255,255,255,.55)" # 入力欄の地
-  # 未明の紙(prefers-color-scheme: dark。朱と灯は変えない)
+  # 未明の紙(朱と灯は変えない)。発動: OSダーク好みは常に尊重 + 端末時刻が夜(18時〜翌5時)なら
+  # OSライトでも夜が来る(head のインラインスクリプトが描画前に <html data-night> で判定。切替UIは作らない)
   dark:
     bg: "#211e23"
     paper: "#29252b"

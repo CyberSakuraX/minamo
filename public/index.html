@@ -4,8 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7efe2">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#211e23">
+<meta name="theme-color" content="#f7efe2">
+<script>
+/* 未明の紙の判定(描画前に一度だけ実行して、暗い部屋での白い一瞬を出さない):
+   OSがダーク好みなら常に夜を尊重する。加えて、端末の時刻が夜(18時〜翌5時)なら、
+   OSがライトでもページに夜が来る。時計は端末のローカル時刻 — どこの街の複製にも、その街の夜が来る */
+(function () {
+  var night = false;
+  try {
+    var h = new Date().getHours();
+    night = (h >= 18 || h < 5) || matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch (e) {}
+  if (night) {
+    var root = document.documentElement;
+    root.setAttribute('data-night', '');
+    root.style.colorScheme = 'dark';
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = '#211e23';
+  }
+})();
+</script>
 <title>黙走会 — minamo.run</title>
 <meta name="description" content="各自の場所で、黙って走る。主催者はいない。走った日に、走った証をこの一枚に残すだけ。連絡手段なし・ランキングなし・ログインなし・広告なし・課金なし。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><g transform='rotate(-8 16 16)'><circle cx='16' cy='16' r='12.5' fill='none' stroke='%23c8703c' stroke-width='2.4'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23c8703c' stroke-width='.8' opacity='.5'/></g><circle cx='26.5' cy='6' r='2' fill='%23eab88a'/></svg>">
@@ -51,26 +69,25 @@
   --field:         rgba(255,255,255,.55);
 }
 
-/* 未明の紙 — 夜明け前に走る人の暗い部屋を眩しくしない(墨側に倒した和紙。朱と灯は変えない) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:            #211e23;
-    --paper:         #29252b;
-    --ink:           #e6ddcd;
-    --sub:           #998c7c;
-    --line:          rgba(230,221,205,.14);
-    --accent-ink:    #d98a55;
-    --accent-soft:   rgba(221,132,73,.45);
-    --btn-shadow:       0 7px 16px rgba(12,6,3,.5);
-    --btn-shadow-press: 0 3px 6px rgba(12,6,3,.55);
-    --card-shadow:      0 2px 10px rgba(0,0,0,.3);
-    --night:         #18161d;
-    --field:         rgba(255,255,255,.06);
-  }
-  /* 夜明けの一拍は残しつつ、暗所での眩しさを抑える */
-  .flash {
-    background: linear-gradient(180deg, rgba(255,196,148,.55), rgba(255,231,203,.35) 45%, rgba(255,250,240,.08));
-  }
+/* 未明の紙 — 夜明け前に走る人の暗い部屋を眩しくしない(墨側に倒した和紙。朱と灯は変えない)。
+   発動条件は head のインラインスクリプト(OSダーク、または端末時刻18時〜翌5時)が data-night で決める */
+:root[data-night] {
+  --bg:            #211e23;
+  --paper:         #29252b;
+  --ink:           #e6ddcd;
+  --sub:           #998c7c;
+  --line:          rgba(230,221,205,.14);
+  --accent-ink:    #d98a55;
+  --accent-soft:   rgba(221,132,73,.45);
+  --btn-shadow:       0 7px 16px rgba(12,6,3,.5);
+  --btn-shadow-press: 0 3px 6px rgba(12,6,3,.55);
+  --card-shadow:      0 2px 10px rgba(0,0,0,.3);
+  --night:         #18161d;
+  --field:         rgba(255,255,255,.06);
+}
+/* 夜明けの一拍は残しつつ、暗所での眩しさを抑える */
+:root[data-night] .flash {
+  background: linear-gradient(180deg, rgba(255,196,148,.55), rgba(255,231,203,.35) 45%, rgba(255,250,240,.08));
 }
 
 @keyframes mkFlash   { 0%{opacity:0} 14%{opacity:.95} 45%{opacity:.7} 100%{opacity:0} }
@@ -91,7 +108,7 @@
 [hidden] { display: none !important; }
 
 /* 孤立文字(「〜もい/い」等)を避ける。未対応ブラウザでは単に無視される */
-#charter li .txt, .footnote, .nashi, .copyfree, #bow-caption, .logo-line { text-wrap: pretty; }
+#charter li .txt, .footnote, #bow-caption, .logo-line { text-wrap: pretty; }
 
 /* キーボード操作時にだけ現れる輪(タッチ・マウスには一切出ない) */
 button:focus-visible, .file-label:focus-within { outline: 2px solid var(--accent-soft); outline-offset: 3px; }
@@ -136,6 +153,12 @@ header {
   margin-top: 16px;
   font-size: 12px; letter-spacing: .16em;
   color: var(--sub);
+}
+/* 「この会について」への静かな入口(説明は本頁に置かず、知りたい人だけが辿る) */
+.about-link {
+  display: inline-block; margin-top: 14px;
+  font-size: 10px; letter-spacing: .22em; padding-left: .22em;
+  color: var(--sub); text-decoration: underline; text-underline-offset: 3px;
 }
 
 /* ---------- 印(#stamp) ---------- */
@@ -445,9 +468,18 @@ header {
 
 /* ---------- フッター ---------- */
 footer { margin: 52px 28px 0; text-align: center; }
-.nashi { font-size: 10.5px; color: var(--sub); letter-spacing: .12em; line-height: 1.9; }
-.tagline { margin-top: 18px; font-size: 12.5px; letter-spacing: .2em; padding-left: .2em; }
-.copyfree { margin-top: 18px; font-size: 10.5px; color: var(--sub); letter-spacing: .08em; line-height: 1.9; }
+.nashi { display: flex; justify-content: center; gap: 18px; color: var(--sub); }
+.nashi .nai { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.nashi svg {
+  width: 25px; height: 25px; display: block;
+  fill: none; stroke: currentColor; stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; opacity: .8;
+}
+.nashi i { font-style: normal; font-size: 9px; letter-spacing: .14em; padding-left: .14em; }
+.tagline { margin-top: 22px; font-size: 12.5px; letter-spacing: .2em; padding-left: .2em; }
+.mit { margin-top: 16px; font-size: 10px; color: var(--sub); letter-spacing: .14em; }
+.mit a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.mit .sep { margin: 0 6px; }
 
 /* ---------- 明転 ---------- */
 .flash {
@@ -472,6 +504,7 @@ footer { margin: 52px 28px 0; text-align: center; }
     <div class="logo">黙走会</div>
     <div class="logo-sub">minamo.run</div>
     <div class="logo-line">各自の場所で、黙って走る。主催者はいない。</div>
+    <a class="about-link" href="about.html">この会について</a>
   </header>
 
   <main>
@@ -591,22 +624,44 @@ footer { margin: 52px 28px 0; text-align: center; }
     <section id="charter">
       <h2>黙走会の憲章</h2>
       <ol>
-        <li><span class="no">一</span><span class="txt">いつ走るかは、自分で決める。毎日でも、週に一度でも。集合場所も、集合時刻もない</span></li>
-        <li><span class="no">二</span><span class="txt">距離もペースも自由。歩いてもいい。休んでもいい。やめてもいい</span></li>
-        <li><span class="no">三</span><span class="txt">会話はしない。走った証は、ボタンひとつ、または #黙走会 の一投稿のみ</span></li>
-        <li><span class="no">四</span><span class="txt">自己紹介は不要。名乗らなくていい。誰であるかより、走ったかどうか</span></li>
-        <li><span class="no">五</span><span class="txt">勧誘・宣伝・営業のための接触は存在しない。この会には連絡手段がないため</span></li>
-        <li><span class="no">六</span><span class="txt">主催者はいない。参加者だけがいる</span></li>
-        <li><span class="no">七</span><span class="txt">この型は誰のものでもない。誰でも、どこでも、許可なく開催してよい</span></li>
+        <li><span class="no">一</span><span class="txt">いつ走るかは、自分で決めていい。毎日でも、週にいちどでも。集まる場所も時刻も、ありません。</span></li>
+        <li><span class="no">二</span><span class="txt">距離もペースも自由です。歩いてもいい。休んでもいい。やめてもいい。</span></li>
+        <li><span class="no">三</span><span class="txt">会話はいりません。走った証は、ボタンひとつ、または #黙走会 のひと投稿だけ。</span></li>
+        <li><span class="no">四</span><span class="txt">自己紹介はいりません。名乗らなくてもだいじょうぶ。誰であるかより、走ったかどうか。</span></li>
+        <li><span class="no">五</span><span class="txt">勧誘も宣伝も、ここには届きません。そもそも、連絡手段がないので。</span></li>
+        <li><span class="no">六</span><span class="txt">主催者はいません。いるのは、それぞれの場所で走る人だけ。</span></li>
+        <li><span class="no">七</span><span class="txt">この型は誰のものでもありません。誰でも、どこの街でも、自由にひらいてかまいません。</span></li>
       </ol>
     </section>
 
   </main>
 
   <footer>
-    <div class="nashi">連絡手段なし・ランキングなし・ログインなし・広告なし・課金なし</div>
+    <!-- 5つの「なし」: 文字の壁ではなく、斜線の小さな印で静かに示す(ここに餌はない、の宣言は不変) -->
+    <div class="nashi" aria-label="この場所にないもの">
+      <span class="nai" role="img" aria-label="連絡手段なし">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15q1 0 1 1v8q0 1-1 1h-8l-4 4v-4h-3q-1 0-1-1v-8q0-1 1-1z"/><line x1="3.5" y1="20.5" x2="20.5" y2="3.5"/></svg>
+        <i>連絡</i>
+      </span>
+      <span class="nai" role="img" aria-label="ランキングなし">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19.5v-9h6v9"/><path d="M3.5 19.5v-5.5H9"/><path d="M20.5 19.5v-4H15"/><path d="M3.5 19.5h17"/><line x1="3.5" y1="20.5" x2="20.5" y2="3.5"/></svg>
+        <i>順位</i>
+      </span>
+      <span class="nai" role="img" aria-label="ログインなし">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7.5" cy="12" r="3.2"/><path d="M10.7 12h9.8"/><path d="M17 12v3.2"/><path d="M20.5 12v3.2"/><line x1="3.5" y1="20.5" x2="20.5" y2="3.5"/></svg>
+        <i>ログイン</i>
+      </span>
+      <span class="nai" role="img" aria-label="広告なし">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14l-7.5-3.4H6a1.8 1.8 0 0 1-1.8-1.8v-3.6A1.8 1.8 0 0 1 6 8.4h4.5z"/><path d="M20.5 9.5a3.4 3.4 0 0 1 0 5"/><line x1="3.5" y1="20.5" x2="20.5" y2="3.5"/></svg>
+        <i>広告</i>
+      </span>
+      <span class="nai" role="img" aria-label="課金なし">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M9 8l3 4.2L15 8"/><path d="M12 12.2v4.4"/><path d="M9.7 13.7h4.6"/><line x1="3.5" y1="20.5" x2="20.5" y2="3.5"/></svg>
+        <i>課金</i>
+      </span>
+    </div>
     <div class="tagline">走ったことは、誰かの気配になる。</div>
-    <div class="copyfree">このページごと複製して、あなたの街の黙走会にしてよい。<br>MIT License</div>
+    <div class="mit"><a href="about.html">この会について</a><span class="sep">・</span>MIT License</div>
   </footer>
 
 </div>

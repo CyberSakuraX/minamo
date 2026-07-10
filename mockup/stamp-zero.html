@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>押印の再考 — ゼロベース2案 — 黙走会</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 36px 20px 90px;
+  background: #57524c; color: #efe9de;
+  font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+h1 { text-align: center; font-size: 19px; font-weight: 600; letter-spacing: .3em; padding-left: .3em; margin: 0 0 8px; }
+.note { text-align: center; font-size: 11.5px; letter-spacing: .1em; color: rgba(239,233,222,.72); margin: 0 auto 22px; max-width: 640px; line-height: 2; }
+
+.keys { max-width: 700px; margin: 0 auto 40px; font-size: 11.5px; line-height: 2; color: rgba(239,233,222,.85); border: 1px solid rgba(239,233,222,.2); border-radius: 8px; padding: 14px 20px; }
+.keys b { font-weight: 600; color: #efe9de; }
+
+.variant { max-width: 1020px; margin: 0 auto 56px; }
+.vhead { font-size: 15px; font-weight: 600; letter-spacing: .18em; margin: 0 0 4px; }
+.vdesc { font-size: 11.5px; letter-spacing: .06em; line-height: 1.9; color: rgba(239,233,222,.72); margin: 0 0 14px; max-width: 760px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+
+/* ---------- テーマ(本番の :root / dark 上書きを再現) ---------- */
+.cell { border-radius: 10px; overflow: hidden; background: var(--bg); color: var(--ink); }
+.theme-light {
+  --bg: #f7efe2; --ink: #38302a; --sub: #9a8b78;
+  --accent: #c8703c; --accent-ink: #a5552a; --accent-soft: rgba(200,112,60,.4);
+  --glow: rgba(240,170,110,.6);
+  --btn-shadow: 0 10px 22px rgba(180,110,60,.3);
+  --btn-shadow-press: 0 4px 9px rgba(180,110,60,.34);
+}
+.theme-dark {
+  --bg: #211e23; --ink: #e6ddcd; --sub: #998c7c;
+  --accent: #c8703c; --accent-ink: #d98a55; --accent-soft: rgba(221,132,73,.45);
+  --glow: rgba(240,170,110,.6);
+  --btn-shadow: 0 8px 18px rgba(12,6,3,.5);
+  --btn-shadow-press: 0 3px 8px rgba(12,6,3,.55);
+}
+.cell-tag { font-size: 10px; letter-spacing: .3em; padding: 12px 16px 0; color: var(--sub); }
+
+/* ---------- 舞台(#stamp の文脈を再現) ---------- */
+.stage {
+  position: relative; text-align: center;
+  padding: 16px 0 30px; overflow: hidden; min-height: 386px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+}
+.hill { position: absolute; bottom: 0; background: var(--ink); border-radius: 100% 100% 0 0; filter: blur(7px); pointer-events: none; }
+.hill-l { left: -40px; right: 52%; height: 64px; opacity: .06; }
+.hill-r { left: 56%; right: -50px; height: 46px; opacity: .05; }
+.sun-glow {
+  position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%);
+  width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow), transparent 68%);
+  opacity: .5; pointer-events: none;
+}
+.lead { position: relative; margin: 0 0 16px; font-size: 12.5px; letter-spacing: .26em; padding-left: .26em; }
+
+/* ---------- 押す前(共通) ---------- */
+.face-wrap { position: relative; }
+.face {
+  position: relative; border: 0; background: none; padding: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  transition: opacity .32s ease, transform .32s ease;
+}
+.pressing .face { opacity: 0; transform: translateY(-10px); pointer-events: none; }
+.pressed .face-wrap { display: none; }
+
+/* 案A: 手彫りの印(判子そのもの) */
+.disc {
+  position: relative; width: 182px; height: 182px; border-radius: 50%;
+  box-shadow: var(--btn-shadow);
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+.disc svg { position: absolute; inset: -9px; width: 200px; height: 200px; }
+.face:active .disc { transform: translateY(3px) scale(.99); box-shadow: var(--btn-shadow-press); }
+.cap  { margin-top: 18px; font-size: 13.5px; letter-spacing: .22em; padding-left: .22em; color: var(--ink); }
+.cap2 { margin-top: 7px; font-size: 9.5px; letter-spacing: .34em; padding-left: .34em; color: var(--sub); }
+
+/* 案B: 一筆の円(まだ満ちていない円) */
+.b-ring { position: relative; width: 196px; height: 196px; transition: transform .1s ease, opacity .1s ease; }
+.b-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.b-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.face:active .b-ring { transform: scale(.985); opacity: .8; }
+.b-label { display: flex; flex-direction: row-reverse; gap: 12px; color: var(--accent); }
+.b-label span { writing-mode: vertical-rl; line-height: 1; font-size: 22px; font-weight: 600; letter-spacing: .16em; }
+.b-once { margin-top: 12px; font-size: 9.5px; letter-spacing: .3em; padding-left: .3em; color: var(--accent); opacity: .75; }
+
+/* ---------- 押した後(共通) ---------- */
+.imprint-wrap { display: none; flex-direction: column; align-items: center; gap: 14px; }
+.pressed .imprint-wrap { display: flex; animation: zAppear .55s ease both; }
+@keyframes zAppear { from { opacity: 0; transform: scale(.985) translateY(4px); } to { opacity: 1; transform: none; } }
+.imprint { width: 208px; height: 208px; }
+.imprint svg { width: 100%; height: 100%; }
+.seal-count { font-size: 15px; letter-spacing: .12em; color: var(--ink); }
+.seal-count b { font-size: 32px; color: var(--ink); padding: 0 6px; font-weight: 500; }
+.seal-notes { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+.seal-notes .n1 { font-size: 12px; letter-spacing: .14em; color: var(--sub); white-space: nowrap; }
+.seal-notes .n2 { font-size: 10.5px; letter-spacing: .12em; color: var(--sub); white-space: nowrap; }
+
+/* ---------- モック用コントロール ---------- */
+.controls {
+  margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  font-size: 11px; letter-spacing: .08em; color: rgba(239,233,222,.8);
+}
+.controls .lbl b { font-weight: 600; color: #efe9de; font-size: 13px; padding: 0 2px; }
+.controls input[type="range"] { width: 240px; accent-color: #c8703c; }
+.controls button {
+  border: 1px solid rgba(239,233,222,.35); background: none; color: rgba(239,233,222,.85);
+  font-size: 10.5px; letter-spacing: .1em; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.controls button:hover { border-color: rgba(239,233,222,.7); }
+.controls .hint { flex-basis: 100%; font-size: 10px; color: rgba(239,233,222,.5); }
+</style>
+</head>
+<body>
+
+<h1>押印の再考 — ゼロベース2案</h1>
+<p class="note">どちらも実際に押せます。押した後の姿も含めて、所作ごと作り直しました。</p>
+
+<div class="keys">
+  <div><b>手触り感の積み重ね</b> — 印は押すたびに頁へ薄く跡を残し、重なっていきます(案A)。円は日を重ねるごとに厚く満ちていきます(案B)。印面そのものも使い込まれて表情を持ちます。スライダーで「累計◯日目」の姿を確かめられます。</div>
+  <div><b>手書き感</b> — 完全な円・均一な塗りを使いません。縁の揺らぎ、朱のかすれ、日付の墨書き。すべて手の跡として描いています。</div>
+  <div><b>毎日押したくなる</b> — 今日の印は今日だけの表情になります(日付シードで毎日変わる)。「別の日の印」で明日の印の気配を覗けます。</div>
+</div>
+
+<!-- ============ 案A ============ -->
+<div class="variant" id="concept-a">
+  <div class="vhead">案A 手彫りの印 — 自分の判子を、毎朝押す</div>
+  <p class="vdesc">ボタンをやめて、「黙走」と彫られた自分の印そのものを置きました。押すと印が持ち上がり、頁にその日の印影が残ります。
+  彫り跡の揺らぎとかすれは毎日変わり、日を重ねると印影は満ちて、頁には過去の押印の気配がうっすら積もります。印面にも使い込んだ斑が増えていきます。</p>
+  <div class="pair"></div>
+  <div class="controls"></div>
+</div>
+
+<!-- ============ 案B ============ -->
+<div class="variant" id="concept-b">
+  <div class="vhead">案B 一筆の円 — 今日の円を、一筆で満たす</div>
+  <p class="vdesc">頁には、まだ満ちていない薄い円だけが置かれています。押すと一筆の円がその日の筆致で満ち、「黙走」が灯ります。
+  円は閉じきらず、少し開いたまま(完璧を求めない・休んでもいい、の造形)。日を重ねると筆はもう一周、もう一周と、静かに厚くなります。</p>
+  <div class="pair"></div>
+  <div class="controls"></div>
+</div>
+
+<script>
+/* ---------- 乱数(日付シード・決定的) ---------- */
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  };
+}
+function rng(seed) {
+  let a = xmur3(seed)();
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+let uid = 0;
+const FONT_ZEN = "'Zen Old Mincho', serif";
+const FONT_BODY = "'Noto Serif JP', serif";
+
+/* ---------- 部品: 縁の揺らぎ(手彫り)フィルタ ---------- */
+function roughFilter(id, seed, scale, freq) {
+  return `<filter id="${id}" x="-18%" y="-18%" width="136%" height="136%">
+    <feTurbulence type="fractalNoise" baseFrequency="${freq}" numOctaves="3" seed="${seed}" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="${scale}" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>`;
+}
+/* ---------- 部品: 朱のかすれフィルタ(fullness 0..1 で満ちる) ---------- */
+function kasureFilter(id, seed, fullness) {
+  const icept = (-0.32 + fullness * 0.72).toFixed(3);
+  return `<filter id="${id}" x="-12%" y="-12%" width="124%" height="124%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.16" numOctaves="3" seed="${seed}" result="t"/>
+    <feComponentTransfer in="t" result="tt"><feFuncA type="linear" slope="3.4" intercept="${icept}"/></feComponentTransfer>
+    <feComposite in="SourceGraphic" in2="tt" operator="in"/>
+  </filter>`;
+}
+/* ---------- 部品: 墨書きの日付(字ごとに手の揺れ) ---------- */
+function inkDates(c, seedKey) {
+  const rj = rng(seedKey + '/date');
+  const col = (chars, x) => chars.split('').map((ch, i) => {
+    const yy = c - ((chars.length - 1) * 13.5) / 2 + i * 13.5 + (rj() - .5) * 2.2;
+    const xx = x + (rj() - .5) * 2.8;
+    return `<text x="${xx.toFixed(1)}" y="${yy.toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+      font-size="11" fill="var(--ink)" opacity=".72" font-family="${FONT_BODY}">${ch}</text>`;
+  }).join('');
+  return col('二〇二六', c + 64) + col('七月十日', c - 64);
+}
+
+/* ---------- 案A: 印面(押す前・判子そのもの) ---------- */
+function svgFaceA(seedKey, n) {
+  const id = 'af' + (uid++);
+  const r = rng(seedKey + '/face');
+  const seedT = Math.floor(r() * 999);
+  /* 使い込みの斑: 日を重ねるほど印面に増える */
+  const rm = rng(seedKey + '/mottle');
+  const mc = Math.min(9, Math.floor(n / 30));
+  let mottles = '';
+  for (let i = 0; i < mc; i++) {
+    const a = rm() * 6.283, d = rm() * 55;
+    mottles += `<circle cx="${(100 + Math.cos(a) * d).toFixed(1)}" cy="${(100 + Math.sin(a) * d).toFixed(1)}"
+      r="${(6 + rm() * 13).toFixed(1)}" fill="rgba(78,30,8,${(0.045 + rm() * 0.05).toFixed(3)})"/>`;
+  }
+  return `<svg viewBox="0 0 200 200" aria-hidden="true">
+    <defs>${roughFilter(id + 'r', seedT, 4.5, 0.045)}</defs>
+    <g filter="url(#${id}r)">
+      <circle cx="100" cy="100" r="86" fill="var(--accent)"/>
+      ${mottles}
+      <circle cx="100" cy="100" r="74" fill="none" stroke="#f6ead8" stroke-width="2" opacity=".8"/>
+      <text x="100" y="75" text-anchor="middle" dominant-baseline="central" font-size="47" font-weight="700"
+        fill="#f6ead8" font-family="${FONT_ZEN}">黙</text>
+      <text x="100" y="127" text-anchor="middle" dominant-baseline="central" font-size="47" font-weight="700"
+        fill="#f6ead8" font-family="${FONT_ZEN}">走</text>
+    </g>
+  </svg>`;
+}
+
+/* ---------- 案A: 印影(押した後) ---------- */
+function svgImprintA(seedKey, n) {
+  const id = 'ai' + (uid++);
+  const r = rng(seedKey + '/imp');
+  const seedT = Math.floor(r() * 999);
+  const fullness = 1 - Math.exp(-n / 70);
+  /* 過去の押印の気配(頁に積もる) */
+  const rg = rng(seedKey + '/ghost');
+  const gc = n <= 1 ? 0 : Math.min(12, Math.round(Math.log2(n) * 2.4));
+  let ghosts = '';
+  for (let i = 0; i < gc; i++) {
+    const dx = (rg() - .5) * 18, dy = (rg() - .5) * 18, rot = (rg() - .5) * 16;
+    const o = 0.035 + rg() * 0.04;
+    ghosts += `<g transform="translate(${(104 + dx).toFixed(1)} ${(104 + dy).toFixed(1)}) rotate(${rot.toFixed(1)})" opacity="${o.toFixed(3)}">
+      <circle r="82" fill="none" stroke="var(--accent)" stroke-width="3.5"/></g>`;
+  }
+  return `<svg viewBox="0 0 208 208" aria-hidden="true">
+    <defs>
+      ${roughFilter(id + 'r', seedT, 5.5, 0.05)}
+      ${kasureFilter(id + 'k', seedT + 7, fullness)}
+    </defs>
+    <g filter="url(#${id}r)">${ghosts}</g>
+    <g filter="url(#${id}r)"><g filter="url(#${id}k)">
+      <circle cx="104" cy="104" r="82" fill="none" stroke="var(--accent)" stroke-width="3.5"/>
+      <circle cx="104" cy="104" r="72" fill="none" stroke="var(--accent)" stroke-width="1" opacity=".55"/>
+      <text x="104" y="79" text-anchor="middle" dominant-baseline="central" font-size="46" font-weight="700"
+        fill="var(--accent)" font-family="${FONT_ZEN}">黙</text>
+      <text x="104" y="131" text-anchor="middle" dominant-baseline="central" font-size="46" font-weight="700"
+        fill="var(--accent)" font-family="${FONT_ZEN}">走</text>
+    </g></g>
+    ${inkDates(104, seedKey)}
+  </svg>`;
+}
+
+/* ---------- 一筆の円のパス(開いた円相) ---------- */
+function ensoPath(rnd, cx, r0, w0, sweepFrac) {
+  const start = -Math.PI * 0.62;
+  const sweep = Math.PI * 2 * sweepFrac;
+  const p1 = rnd() * 6.28, p2 = rnd() * 6.28;
+  const a1 = 1.5 + rnd() * 1.8, a2 = 0.7 + rnd() * 1.1;
+  const N = 72, outer = [], inner = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, a = start + sweep * t;
+    const rad = r0 + a1 * Math.sin(2 * a + p1) + a2 * Math.sin(5 * a + p2);
+    let w = w0 * (0.5 + 0.85 * Math.sin(Math.PI * (0.08 + 0.92 * t)));
+    if (t > 0.86) w *= Math.max(0.06, 1 - (t - 0.86) / 0.14 * 0.95);
+    if (t < 0.05) w *= 0.55 + (t / 0.05) * 0.45;
+    outer.push([cx + Math.cos(a) * (rad + w / 2), cx + Math.sin(a) * (rad + w / 2)]);
+    inner.push([cx + Math.cos(a) * (rad - w / 2), cx + Math.sin(a) * (rad - w / 2)]);
+  }
+  const pts = outer.concat(inner.reverse());
+  return 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L') + 'Z';
+}
+
+/* ---------- 案B: 満ちていない円(押す前) ---------- */
+function svgFaceB(seedKey) {
+  const id = 'bf' + (uid++);
+  const r = rng(seedKey + '/bface');
+  const seedT = Math.floor(r() * 999);
+  const d = ensoPath(r, 98, 80, 3, 0.96);
+  return `<svg viewBox="0 0 196 196" aria-hidden="true">
+    <defs>${roughFilter(id + 'r', seedT, 3.5, 0.05)}</defs>
+    <g filter="url(#${id}r)"><path d="${d}" fill="var(--accent)" opacity=".35"/></g>
+  </svg>`;
+}
+
+/* ---------- 案B: 満ちた円(押した後) ---------- */
+function svgImprintB(seedKey, n) {
+  const id = 'bi' + (uid++);
+  const r = rng(seedKey + '/bimp');
+  const seedT = Math.floor(r() * 999);
+  const fullness = 1 - Math.exp(-n / 70);
+  /* 積み重ねの筆: おおよそ40日ごとに一周増える */
+  const layers = Math.min(4, Math.floor(n / 40));
+  let extra = '';
+  for (let i = 0; i < layers; i++) {
+    const rl = rng(seedKey + '/layer' + i);
+    const d = ensoPath(rl, 104, 78 + (rl() - .5) * 7, 10, 0.93 + rl() * 0.04);
+    extra += `<path d="${d}" fill="var(--accent)" opacity="${(0.10 + rl() * 0.05).toFixed(3)}"/>`;
+  }
+  const dMain = ensoPath(r, 104, 80, 13, 0.94);
+  return `<svg viewBox="0 0 208 208" aria-hidden="true">
+    <defs>
+      ${roughFilter(id + 'r', seedT, 4.5, 0.05)}
+      ${kasureFilter(id + 'k', seedT + 7, Math.max(fullness, 0.25))}
+    </defs>
+    <g filter="url(#${id}r)">${extra}</g>
+    <g filter="url(#${id}r)"><g filter="url(#${id}k)">
+      <path d="${dMain}" fill="var(--accent)"/>
+      <text x="104" y="80" text-anchor="middle" dominant-baseline="central" font-size="44" font-weight="700"
+        fill="var(--accent)" font-family="${FONT_ZEN}">黙</text>
+      <text x="104" y="130" text-anchor="middle" dominant-baseline="central" font-size="44" font-weight="700"
+        fill="var(--accent)" font-family="${FONT_ZEN}">走</text>
+    </g></g>
+    ${inkDates(104, seedKey)}
+  </svg>`;
+}
+
+/* ---------- 舞台の組み立て ---------- */
+const state = {
+  a: { n: 1, day: 0 },
+  b: { n: 1, day: 0 },
+};
+
+function stageHTML(concept) {
+  const face = concept === 'a'
+    ? `<button class="face" type="button" aria-label="走った印を押す">
+         <span class="disc"></span>
+         <span class="cap">走った印を押す</span>
+         <span class="cap2">一日一回まで</span>
+       </button>`
+    : `<button class="face" type="button" aria-label="走った印を押す">
+         <span class="b-ring">
+           <span class="b-svg"></span>
+           <span class="b-inner">
+             <span class="b-label"><span>走った印</span><span>を押す</span></span>
+             <span class="b-once">一日一回まで</span>
+           </span>
+         </span>
+       </button>`;
+  return `
+    <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+    <p class="lead">走っても、歩いても、今日の印を。</p>
+    <div class="face-wrap">${face}</div>
+    <div class="imprint-wrap">
+      <div class="imprint"></div>
+      <div class="seal-count">これで<b class="total"></b>日目です</div>
+      <div class="seal-notes">
+        <div class="n1">今日は、もう印を残しています</div>
+        <div class="n2">また、あした。</div>
+      </div>
+    </div>`;
+}
+
+function buildConcept(concept) {
+  const root = document.getElementById('concept-' + concept);
+  const pair = root.querySelector('.pair');
+  ['light', 'dark'].forEach(theme => {
+    const cell = document.createElement('div');
+    cell.className = 'cell theme-' + theme;
+    cell.innerHTML = `<div class="cell-tag">${theme === 'light' ? '暁(ライト)' : '未明(ダーク)'}</div>
+      <div class="stage" data-concept="${concept}">${stageHTML(concept)}</div>`;
+    pair.appendChild(cell);
+    const stage = cell.querySelector('.stage');
+    stage.querySelector('.face').addEventListener('click', () => {
+      if (stage.classList.contains('pressed') || stage.classList.contains('pressing')) return;
+      stage.classList.add('pressing');
+      setTimeout(() => { stage.classList.remove('pressing'); stage.classList.add('pressed'); }, 260);
+    });
+  });
+  const ctrl = root.querySelector('.controls');
+  ctrl.innerHTML = `
+    <span class="lbl">累計 <b class="nval">1</b> 日目と仮定</span>
+    <input type="range" min="1" max="365" value="1" step="1">
+    <button type="button" class="reroll">別の日の印を見る</button>
+    <button type="button" class="reset">押す前に戻す</button>
+    <span class="hint">スライダーと各ボタンはモック用の装置です(本番には置きません)。</span>`;
+  ctrl.querySelector('input').addEventListener('input', e => {
+    state[concept].n = +e.target.value;
+    ctrl.querySelector('.nval').textContent = e.target.value;
+    render(concept);
+  });
+  ctrl.querySelector('.reroll').addEventListener('click', () => { state[concept].day++; render(concept); });
+  ctrl.querySelector('.reset').addEventListener('click', () => {
+    root.querySelectorAll('.stage').forEach(s => s.classList.remove('pressed', 'pressing'));
+  });
+}
+
+function render(concept) {
+  const { n, day } = state[concept];
+  const seedKey = 'minamo-zero/' + concept + '/' + (20260710 + day);
+  document.querySelectorAll(`#concept-${concept} .stage`).forEach(stage => {
+    if (concept === 'a') {
+      stage.querySelector('.disc').innerHTML = svgFaceA(seedKey, n);
+      stage.querySelector('.imprint').innerHTML = svgImprintA(seedKey, n);
+    } else {
+      stage.querySelector('.b-svg').innerHTML = svgFaceB(seedKey);
+      stage.querySelector('.imprint').innerHTML = svgImprintB(seedKey, n);
+    }
+    stage.querySelector('.total').textContent = n;
+  });
+}
+
+buildConcept('a'); buildConcept('b');
+render('a'); render('b');
+</script>
+</body>
+</html>

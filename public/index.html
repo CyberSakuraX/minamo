@@ -29,7 +29,7 @@
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:            #f7efe2;
@@ -38,10 +38,11 @@
   --sub:           #9a8b78;
   --line:          rgba(90,66,42,.15);
   --accent:        #c8703c;
-  --accent-hi:     #dd8449;
   --accent-ink:    #a5552a;
   --accent-soft:   rgba(200,112,60,.4);
-  --accent-shadow: rgba(180,110,60,.3);
+  --btn-shadow:       0 9px 20px rgba(180,110,60,.3);
+  --btn-shadow-press: 0 3px 7px rgba(180,110,60,.35);
+  --card-shadow:      0 2px 10px rgba(90,66,42,.1);
   --night:         #2a2637;
   --night-ink:     #d9d0c4;
   --night-sub:     #948b85;
@@ -60,7 +61,9 @@
     --line:          rgba(230,221,205,.14);
     --accent-ink:    #d98a55;
     --accent-soft:   rgba(221,132,73,.45);
-    --accent-shadow: rgba(0,0,0,.45);
+    --btn-shadow:       0 7px 16px rgba(12,6,3,.5);
+    --btn-shadow-press: 0 3px 6px rgba(12,6,3,.55);
+    --card-shadow:      0 2px 10px rgba(0,0,0,.3);
     --night:         #18161d;
     --field:         rgba(255,255,255,.06);
   }
@@ -74,6 +77,15 @@
 @keyframes mkPulse   { 0%,100%{transform:scale(1);opacity:.85} 50%{transform:scale(1.3);opacity:1} }
 @keyframes mkAppear  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes mkTwinkle { 0%,100%{filter:brightness(.85)} 50%{filter:brightness(1.25)} }
+/* 押印の所作(すべて一度きり。ループしない) */
+@keyframes mkPressLift {
+  0%   { transform: none; opacity: 1; }
+  24%  { transform: translateY(7px) scale(.96, .94); opacity: 1; }
+  62%  { transform: translateY(-14px) scale(1.01); opacity: .55; }
+  100% { transform: translateY(-26px); opacity: 0; }
+}
+@keyframes mkPon { 0%{transform:scale(1.7);opacity:0} 55%{transform:scale(.93);opacity:1} 100%{transform:scale(1);opacity:1} }
+@keyframes mkDip { 0%{transform:none} 45%{transform:translateY(3px)} 100%{transform:none} }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -110,9 +122,10 @@ header {
   text-align: center;
 }
 .logo {
-  font-family: 'Zen Old Mincho', serif;
-  font-size: 32px; font-weight: 700;
-  letter-spacing: .3em; padding-left: .3em;
+  font-family: 'Klee One', cursive; /* 題字も手の跡に(2026-07-10)。枠の静けさは明朝が支える */
+  font-size: 34px; font-weight: 600;
+  letter-spacing: .24em; padding-left: .24em;
+  font-feature-settings: 'palt' 1;
 }
 .logo-sub {
   margin-top: 2px;
@@ -156,58 +169,70 @@ header {
 
 #stamp-button-wrap { position: relative; display: flex; justify-content: center; }
 #stamp-button {
-  position: relative;
-  width: 180px; height: 180px; border-radius: 50%; border: 0;
-  cursor: pointer; transform: rotate(-2deg);
-  background: radial-gradient(circle at 38% 30%, var(--accent-hi), var(--accent) 55%, var(--accent-ink) 100%);
-  box-shadow: 0 12px 28px var(--accent-shadow), inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -18px 30px rgba(60,10,0,.16);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
-  transition: transform .15s ease;
+  position: relative; border: 0; cursor: pointer; padding: 0;
+  width: 168px; height: 168px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: var(--btn-shadow);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: transform .1s ease, box-shadow .1s ease;
 }
-#stamp-button:active { transform: rotate(-2deg) scale(.96); }
-#stamp-button .ring {
-  position: absolute; inset: 9px; border-radius: 50%;
-  border: 1.5px solid rgba(255,244,230,.5); pointer-events: none;
-}
+#stamp-button:active { transform: translateY(4px) scale(.97, .95); box-shadow: var(--btn-shadow-press); }
+/* ラベル: Klee One 横二行。手書きの自然さ = palt字詰め + 縦長の字形 + 右肩上がり */
 #stamp-button .label {
-  writing-mode: vertical-rl; height: 112px;
-  font-size: 23px; font-weight: 600; letter-spacing: .22em;
-  color: #fdf3e4; line-height: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: #fdf3e4; transform: rotate(-2.5deg);
+}
+#stamp-button .label span {
+  font-family: 'Klee One', cursive; font-weight: 600; line-height: 1;
+  font-size: 32px; letter-spacing: .05em; padding-left: .05em;
+  font-feature-settings: 'palt' 1;
+  transform: scale(.9, 1.09);
 }
 #stamp-button .once {
-  font-size: 9.5px; letter-spacing: .34em; padding-left: .34em;
-  color: rgba(253,243,228,.78);
+  margin-top: 8px; font-size: 10px; letter-spacing: .3em; padding-left: .3em;
+  color: rgba(253,243,228,.8);
+  font-family: 'Klee One', cursive; transform: rotate(-2.5deg);
 }
+/* 押す所作: 押し込む → 判が持ち上がる(一度きり) */
+#stamp.press-seq #stamp-button { animation: mkPressLift .5s ease both; pointer-events: none; }
+
+/* ---------- スタンプカード(台紙・層1の風景) ---------- */
+#stamp-card-zone { position: relative; margin-top: 20px; display: flex; flex-direction: column; align-items: center; }
+#stamp-card {
+  position: relative; width: 316px; max-width: 86%;
+  background: var(--paper);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px 14px 16px;
+  box-shadow: var(--card-shadow);
+}
+#stamp.pressed-now #stamp-card { animation: mkDip .34s ease .1s both; }
+#stamp-card .hole {
+  position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--bg); box-shadow: inset 0 1px 2px rgba(0,0,0,.22);
+}
+#card-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px 6px; }
+.stamp-slot { position: relative; height: 52px; display: flex; align-items: center; justify-content: center; }
+.stamp-slot::before {
+  content: ''; position: absolute; width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--line);
+}
+.stamp-slot svg { position: relative; width: 50px; height: 50px; }
+/* 今日の一枚: ぽん、と着地(押した直後のセッションだけ動く) */
+#stamp.pressed-now .stamp-slot.today svg { animation: mkPon .42s cubic-bezier(.2, 1.35, .45, 1) .32s both; }
+#card-stack { display: flex; flex-direction: column; align-items: center; margin-top: -1px; width: 300px; max-width: 82%; }
+#card-stack i {
+  display: block; height: 4px; border-radius: 0 0 6px 6px;
+  background: var(--paper); border: 1px solid var(--line); border-top: 0;
+  box-shadow: var(--card-shadow);
+}
+#card-note { margin-top: 10px; font-size: 10px; letter-spacing: .22em; padding-left: .22em; color: var(--sub); }
 
 #seal-wrap {
-  position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  position: relative; margin-top: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
   animation: mkAppear .7s ease both;
 }
-.seal {
-  position: relative;
-  width: 180px; height: 180px; border-radius: 50%;
-  transform: rotate(-3.5deg);
-  border: 3px solid var(--accent); color: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-}
-.seal .ring {
-  position: absolute; inset: 8px; border-radius: 50%;
-  border: 1px solid var(--accent-soft); pointer-events: none;
-}
-.seal .moku {
-  writing-mode: vertical-rl;
-  font-family: 'Zen Old Mincho', serif;
-  font-size: 46px; font-weight: 700; letter-spacing: .28em;
-  line-height: 1.1; padding-top: .28em;
-}
-.seal-date {
-  position: absolute; top: 50%; transform: translateY(-50%);
-  writing-mode: vertical-rl; white-space: nowrap;
-  font-size: 10.5px; letter-spacing: .14em; color: var(--accent-ink);
-}
-#seal-y  { right: 26px; }
-#seal-md { left: 26px; }
 .seal-count { font-size: 15px; letter-spacing: .12em; }
 .seal-count b {
   font-size: 33px; color: var(--ink); /* 朱の規律: 個人の数字は墨(朱は印と今日の灯だけ) */
@@ -332,6 +357,12 @@ header {
   animation: mkPulse 3s ease-in-out infinite;
 }
 #bow-banner .txt { font-size: 12px; letter-spacing: .1em; }
+/* 状態別のガイド行: いま何ができるかを、光の上で先に言う */
+#bow-lead {
+  padding: 12px 2px 0;
+  font-size: 12px; letter-spacing: .1em; line-height: 1.9;
+  text-align: center;
+}
 #bow-field { position: relative; height: 188px; margin: 6px 0 4px; }
 .dot-tap {
   position: absolute;
@@ -339,10 +370,16 @@ header {
   display: flex; align-items: center; justify-content: center;
   background: transparent; border: 0; padding: 0;
 }
+/* 触れられる光の輪(アフォーダンス)。会釈できるときだけ現れる */
+.dot-can::after {
+  content: ''; position: absolute; inset: 9px; border-radius: 50%;
+  border: 1px solid rgba(242,227,196,.3);
+}
+.dot-can:active .dot { transform: scale(1.45); }
 .dot {
   display: block; border-radius: 50%;
   background: #f2e3c4;
-  transition: opacity .6s ease, box-shadow .6s ease;
+  transition: opacity .6s ease, box-shadow .6s ease, transform .15s ease;
 }
 .dot-bowed .dot {
   background: var(--glow-ink);
@@ -421,7 +458,10 @@ footer { margin: 52px 28px 0; text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .flash, .dot, .dot-bowed .dot, #bow-banner .banner-dot { animation: none !important; }
+  .flash, .dot, .dot-bowed .dot, #bow-banner .banner-dot,
+  #stamp.press-seq #stamp-button, #stamp.pressed-now #stamp-card,
+  #stamp.pressed-now .stamp-slot.today svg { animation: none !important; }
+  #stamp.press-seq #stamp-button { opacity: 0; } /* 所作を省いても、判は静かに役目を終える */
 }
 </style>
 </head>
@@ -450,24 +490,26 @@ footer { margin: 52px 28px 0; text-align: center; }
       <p class="lead">走っても、歩いても、今日の印を。</p>
 
       <div id="stamp-button-wrap">
-        <button id="stamp-button" type="button">
-          <span class="ring"></span>
-          <span class="label">走った印を押す</span>
+        <button id="stamp-button" type="button" aria-label="走った印を押す">
+          <span class="label"><span>走った印</span><span>を押す</span></span>
           <span class="once">一日一回まで</span>
         </button>
       </div>
 
-      <div id="seal-wrap" hidden>
-        <div class="seal">
-          <span class="ring"></span>
-          <span class="moku">黙走</span>
-          <span class="seal-date" id="seal-y"></span>
-          <span class="seal-date" id="seal-md"></span>
+      <div id="stamp-card-zone">
+        <div id="stamp-card">
+          <span class="hole"></span>
+          <div id="card-slots"></div>
         </div>
+        <div id="card-stack"></div>
+        <div id="card-note" hidden></div>
+      </div>
+
+      <div id="seal-wrap" hidden>
         <div class="seal-count">これで<b id="seal-total"></b>日目です</div>
         <div class="seal-notes">
           <div class="n1">今日は、もう印を残しています</div>
-          <div class="n2">また、あしたの朝に。</div>
+          <div class="n2">また、あした。</div>
         </div>
       </div>
     </section>
@@ -541,6 +583,7 @@ footer { margin: 52px 28px 0; text-align: center; }
         <span class="banner-dot"></span>
         <span class="txt">今日のあなたの走りに、誰かが会釈しました。</span>
       </div>
+      <div id="bow-lead"></div>
       <div id="bow-field"></div>
       <div id="bow-caption"></div>
     </section>
@@ -623,20 +666,110 @@ footer { margin: 52px 28px 0; text-align: center; }
     };
   }
 
-  /* ---------- 落款の漢数字 ---------- */
-  function kanjiNum(n) {
-    var d = '〇一二三四五六七八九';
-    if (n < 10) return d[n];
-    if (n === 10) return '十';
-    if (n < 20) return '十' + (n % 10 ? d[n % 10] : '');
-    var t = Math.floor(n / 10), o = n % 10;
-    return d[t] + '十' + (o ? d[o] : '');
+  /* ---------- スタンプカード(層1 — total と last だけから決定的に描画) ---------- */
+  var PER_CARD = 10;
+  var MOTIF_SET = ['run', 'hanamaru', 'asahi', 'minamo']; // 絵柄は日替わり(係の人の気分)
+
+  // 花丸: 外周の波(花びら)+ 内の渦。手描きの一筆
+  function hanamaruPaths(r) {
+    var petals = 8, R = 30, amp = 7.5;
+    var ph = r() * 6.28, drift = (r() - .5) * 3;
+    var d = '', N = 120, i, t, a, rad, x, y;
+    for (i = 0; i <= N; i++) {
+      t = i / N; a = -1.2 + t * 6.55; // 一周とすこし重ねる
+      rad = R + amp * Math.sin(petals * a + ph) + drift * Math.sin(a * 1.7);
+      x = 50 + Math.cos(a) * rad; y = 50 + Math.sin(a) * rad;
+      d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    var s = '', M = 70;
+    for (i = 0; i <= M; i++) {
+      t = i / M; a = ph + t * 6.28 * 1.9;
+      rad = 2.5 + t * 13.5 + (r() - .5) * .8;
+      x = 50 + Math.cos(a) * rad; y = 50 + Math.sin(a) * rad;
+      s += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    return { ring: d, swirl: s };
+  }
+
+  function motifBody(motif, r) {
+    var S = ' fill="none" stroke="var(--accent)" stroke-linecap="round" stroke-linejoin="round"';
+    if (motif === 'hanamaru') {
+      var p = hanamaruPaths(r);
+      return '<path d="' + p.ring + '"' + S + ' stroke-width="4.6"/>' +
+             '<path d="' + p.swirl + '"' + S + ' stroke-width="4.2"/>';
+    }
+    if (motif === 'asahi') { // 朝日: 地平線から顔を出す太陽と光
+      var rays = '', k, a, x1, y1, x2, y2;
+      for (k = 0; k < 5; k++) {
+        a = Math.PI + (Math.PI * (k + 1)) / 6 + (r() - .5) * .06;
+        x1 = 50 + Math.cos(a) * 26; y1 = 64 + Math.sin(a) * 26;
+        x2 = 50 + Math.cos(a) * 36; y2 = 64 + Math.sin(a) * 36;
+        rays += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) +
+                '" y2="' + y2.toFixed(1) + '" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>';
+      }
+      return '<path d="M32 64 a18 18 0 0 1 36 0"' + S + ' stroke-width="4.6"/>' +
+             '<line x1="18" y1="64" x2="82" y2="64" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>' + rays;
+    }
+    if (motif === 'minamo') { // 水面: 一粒の月と、ひろがる波紋
+      var w = function (t) {
+        return 'M' + (50 - t).toFixed(1) + ' ' + (52 + (t - 14) * .9).toFixed(1) +
+               ' q ' + t + ' ' + (7 + (r() - .5) * 2).toFixed(1) + ' ' + (t * 2) + ' 0';
+      };
+      return '<circle cx="50" cy="30" r="4.5" fill="var(--accent)"/>' +
+             '<path d="' + w(14) + '"' + S + ' stroke-width="4.4"/>' +
+             '<path d="' + w(22) + '"' + S + ' stroke-width="4.2"/>' +
+             '<path d="' + w(30) + '"' + S + ' stroke-width="4"/>';
+    }
+    // run: 丸枠+走(ゴム印)
+    return '<circle cx="50" cy="50" r="38" fill="none" stroke="var(--accent)" stroke-width="4"/>' +
+           '<text x="50" y="52" text-anchor="middle" dominant-baseline="central" font-size="44" font-weight="700"' +
+           ' fill="var(--accent)" font-family="\'Zen Old Mincho\', serif">走</text>';
+  }
+
+  // n日目の印はシード固定 = 一度押された印は翌日以降も同じ姿(粒と同じ「動かない過去」/ docs/07)
+  function stampSVG(absIdx, isToday) {
+    var r = rng('minamo-stamp/' + absIdx);
+    var motif = MOTIF_SET[Math.floor(r() * MOTIF_SET.length)];
+    var rot = ((r() - .5) * 13).toFixed(1);
+    var dx = ((r() - .5) * 4).toFixed(1);
+    var dy = ((r() - .5) * 4).toFixed(1);
+    var op = (isToday ? .95 : .78 + r() * .16).toFixed(2);
+    return '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+           '<g transform="translate(' + dx + ' ' + dy + ') rotate(' + rot + ' 50 50)" opacity="' + op + '">' +
+           motifBody(motif, r) + '</g></svg>';
+  }
+
+  function renderCard(total, stamped) {
+    // stamped の total は今日を含む。現在のカードにある印の数 = shown
+    var shown = stamped ? ((total - 1) % PER_CARD) + 1 : total % PER_CARD;
+    var doneCards = Math.floor((total - shown) / PER_CARD);
+    var html = '', i, absIdx, isToday;
+    for (i = 0; i < PER_CARD; i++) {
+      if (i < shown) {
+        absIdx = total - shown + i + 1;
+        isToday = stamped && i === shown - 1;
+        html += '<span class="stamp-slot' + (isToday ? ' today' : '') + '">' + stampSVG(absIdx, isToday) + '</span>';
+      } else {
+        html += '<span class="stamp-slot"></span>';
+      }
+    }
+    elCardSlots.innerHTML = html;
+
+    // 満了したカードの重なり(厚み)。固定シード: 重なりの佇まいは毎日同じ
+    var bars = Math.min(10, doneCards), rp = rng('minamo-pile'), stack = '';
+    for (i = 0; i < bars; i++) {
+      stack += '<i style="width:' + (100 - i) + '%; transform: translateX(' + ((rp() - .5) * 7).toFixed(1) + 'px)"></i>';
+    }
+    elCardStack.innerHTML = stack;
+    elCardNote.textContent = doneCards > 0 ? 'いっぱいになったカードが、下に ' + doneCards + ' 枚' : '';
+    elCardNote.hidden = !(doneCards > 0);
   }
 
   /* ---------- 要素 ---------- */
   var $ = function (id) { return document.getElementById(id); };
   var elStampBtn = $('stamp-button'), elStampWrap = $('stamp-button-wrap'), elSealWrap = $('seal-wrap');
-  var elSealY = $('seal-y'), elSealMD = $('seal-md'), elSealTotal = $('seal-total');
+  var elStampSec = $('stamp'), elCardSlots = $('card-slots'), elCardStack = $('card-stack'), elCardNote = $('card-note');
+  var elSealTotal = $('seal-total');
   var elEditor = $('note-editor'), elSummary = $('note-summary'), elLink = $('note-link');
   var elSummaryVal = $('note-summary-val'), elInKm = $('in-km'), elInMin = $('in-min');
   var elFileMsg = $('file-msg');
@@ -644,6 +777,7 @@ footer { margin: 52px 28px 0; text-align: center; }
   var elSumLine = $('sum-line'), elSumNum = $('sum-num'), elNoTotal = $('no-total');
   var elTodayCount = $('today-count');
   var elSec03 = $('sec03'), elBanner = $('bow-banner'), elField = $('bow-field'), elCaption = $('bow-caption');
+  var elBowLead = $('bow-lead');
 
   var showEditor = false;
 
@@ -736,22 +870,12 @@ footer { margin: 52px 28px 0; text-align: center; }
     var note = noteToday();
     var bowed = bowedToday();
 
-    /* 印 */
-    elStampWrap.hidden = stamped;
-    elSealWrap.hidden = !stamped;
-    if (stamped) {
-      var parts = t.split('-');
-      elSealY.textContent = parts[0].split('').map(function (ch) { return '〇一二三四五六七八九'[+ch]; }).join('');
-      elSealMD.textContent = kanjiNum(+parts[1]) + '月' + kanjiNum(+parts[2]) + '日';
-      elSealTotal.textContent = total;
-
-      // 印影の日ごとのゆらぎ(日付シード・同じ日は誰の印影も同じゆらぎ / docs/07 §4)
-      var w = rng('minamo-seal/' + t);
-      var sealEl = document.querySelector('.seal');
-      sealEl.style.transform = 'rotate(' + (-(2.5 + w() * 2)).toFixed(2) + 'deg)';
-      sealEl.querySelector('.ring').style.inset = (7 + Math.round(w() * 3)) + 'px';
-      sealEl.style.opacity = (0.94 + w() * 0.06).toFixed(3); // 下限0.94: 「印の薄れ」に見せない
-    }
+    /* 印 — 押す所作の最中(press-seq)は判のアニメを邪魔しない(直前の姿のまま保つ) */
+    var pressing = elStampSec.classList.contains('press-seq');
+    elStampWrap.hidden = stamped && !pressing;
+    elSealWrap.hidden = !stamped || pressing;
+    if (stamped) elSealTotal.textContent = total;
+    renderCard(pressing ? total - 1 : total, stamped && !pressing);
 
     /* 添え書き 3態 */
     var hasNote = !!(note && (note.km || note.min));
@@ -785,13 +909,23 @@ footer { margin: 52px 28px 0; text-align: center; }
     if (apiOk) {
       elBanner.hidden = !received;
       renderDots(t, stamped, shownCount || 0, bowed);
+      /* 状態別の言葉: ガイド行(光の上)がいま何ができるかを言い、説明(光の下)が作法を添える */
+      var lead, cap;
       if (!stamped) {
-        elCaption.textContent = '走った印を残すと、今日の気配が見えます。';
-      } else if (!bowed) {
-        elCaption.textContent = '一点にだけ、一日に一度、そっと触れられます。誰か分からない、返せない会釈です。';
+        lead = '光の一粒は、今日すでに走っただれかの気配です。';
+        cap  = '走った印を残すと、ひとつの光に会釈できます。';
+      } else if (bowed) {
+        lead = 'そっと、会釈を残しました。';
+        cap  = '相手には、灯りがひとつだけ届きます。だれからかは、伝わりません。';
+      } else if (!serverDots.length) {
+        lead = '今日は、まだほかの走りの気配がありません。';
+        cap  = 'だれかが印を残すと、ここに光が灯ります。';
       } else {
-        elCaption.textContent = 'そっと、会釈を残しました。相手には、灯りがひとつだけ届きます。';
+        lead = '光をひとつ選んで、そっと触れる。それが今日の会釈です。';
+        cap  = '一日に一度だけ。誰か分からない、返せない会釈です。';
       }
+      elBowLead.textContent = lead;
+      elCaption.textContent = cap;
     }
   }
 
@@ -810,16 +944,19 @@ footer { margin: 52px 28px 0; text-align: center; }
       var glowSpread = Math.round(r() * 2);
       var op = 0.3 + r() * 0.6;
       var isBowed = !!(bowed && i === bowed.idx);
-      var id = serverDots[i] || null; // IDのない点は雰囲気の光(タップ不可)
+      // どの光に触れても、実在するだれかに届く(「触れたのに無反応」を作らない)。
+      // 点は個人に紐づく表示ではないので、割り当ては巡回で問題ない
+      var id = serverDots.length ? serverDots[i % serverDots.length] : null;
+      var tappable = canBow && id;
 
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'dot-tap' + (isBowed ? ' dot-bowed' : '');
+      btn.className = 'dot-tap' + (isBowed ? ' dot-bowed' : '') + (tappable ? ' dot-can' : '');
       btn.style.left = left + '%';
       btn.style.top = top + '%';
-      btn.style.cursor = (canBow && id) ? 'pointer' : 'default';
-      btn.setAttribute('aria-label', '光の点');
-      if (canBow && id) {
+      btn.style.cursor = tappable ? 'pointer' : 'default';
+      btn.setAttribute('aria-label', tappable ? '今日のだれかの光。触れると、会釈がひとつ届きます' : '光の点');
+      if (tappable) {
         btn.addEventListener('click', (function (idx, to) {
           return function () { bowAt(idx, to); };
         })(i, id));
@@ -829,7 +966,8 @@ footer { margin: 52px 28px 0; text-align: center; }
       dot.className = 'dot';
       dot.style.width = s + 'px';
       dot.style.height = s + 'px';
-      dot.style.opacity = stamped ? (isBowed ? 1 : op) : 0.14;
+      // 触れられる光は暗すぎないように下限を持ち上げる(乱数の消費順は変えない)
+      dot.style.opacity = stamped ? (isBowed ? 1 : (tappable ? Math.max(op, 0.55).toFixed(2) : op)) : 0.14;
       dot.style.boxShadow = '0 0 ' + glowSize + 'px ' + glowSpread + 'px rgba(242,227,196,.4)';
       dot.style.animation = 'mkTwinkle ' + tw.toFixed(2) + 's ease-in-out infinite';
 
@@ -846,15 +984,21 @@ footer { margin: 52px 28px 0; text-align: center; }
     lsSet('total', total);
     lsSet('last', t);
     flash();
-    showEditor = true;
     stampedThisSession = true;
-    elInKm.value = '';
-    elInMin.value = '';
-    setFileMsg('');
-    // フラグメント経由の保留値があれば、クリアの後に流し込む(前日残留値と混ざらない)
-    if (pendingNote) { prefillNote(pendingNote.km, pendingNote.min); pendingNote = null; }
-    render();
-    apiStamp();
+    // 所作の三拍: 押し込む(:active) → 判が持ち上がる(press-seq) → カードにぽん(pressed-now)
+    elStampSec.classList.add('press-seq');
+    setTimeout(function () {
+      elStampSec.classList.remove('press-seq');
+      elStampSec.classList.add('pressed-now');
+      showEditor = true;
+      elInKm.value = '';
+      elInMin.value = '';
+      setFileMsg('');
+      // フラグメント経由の保留値があれば、クリアの後に流し込む(前日残留値と混ざらない)
+      if (pendingNote) { prefillNote(pendingNote.km, pendingNote.min); pendingNote = null; }
+      render();
+      apiStamp();
+    }, 430);
   }
 
   var flashTimer;

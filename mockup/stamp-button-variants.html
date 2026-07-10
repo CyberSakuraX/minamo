@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>押印ボタン 3案比較 — 黙走会</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 36px 20px 80px;
+  background: #57524c; color: #efe9de;
+  font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+h1 { text-align: center; font-size: 19px; font-weight: 600; letter-spacing: .3em; padding-left: .3em; margin: 0 0 6px; }
+.note { text-align: center; font-size: 11.5px; letter-spacing: .12em; color: rgba(239,233,222,.7); margin: 0 0 34px; }
+
+.variant { max-width: 1020px; margin: 0 auto 46px; }
+.vhead { font-size: 15px; font-weight: 600; letter-spacing: .18em; margin: 0 0 4px; }
+.vdesc { font-size: 11.5px; letter-spacing: .08em; color: rgba(239,233,222,.72); margin: 0 0 14px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+
+/* ---------- テーマ(本番の :root / dark 上書きを再現) ---------- */
+.cell {
+  border-radius: 10px; overflow: hidden;
+  background: var(--bg); color: var(--ink);
+}
+.theme-light {
+  --bg:            #f7efe2;
+  --ink:           #38302a;
+  --sub:           #9a8b78;
+  --accent:        #c8703c;
+  --accent-hi:     #dd8449;
+  --accent-ink:    #a5552a;
+  --accent-soft:   rgba(200,112,60,.4);
+  --glow:          rgba(240,170,110,.6);
+  /* 共通修正: 影の幾何もテーマ変数に(暁はほぼ現行のまま) */
+  --btn-shadow:    0 12px 26px rgba(180,110,60,.3);
+}
+.theme-dark {
+  --bg:            #211e23;
+  --ink:           #e6ddcd;
+  --sub:           #998c7c;
+  --accent:        #c8703c;
+  --accent-hi:     #dd8449;
+  --accent-ink:    #d98a55;
+  --accent-soft:   rgba(221,132,73,.45);
+  --glow:          rgba(240,170,110,.6);
+  /* 共通修正: 真っ黒 rgba(0,0,0,.45)/blur28 をやめ、暖色寄りに締める */
+  --btn-shadow:    0 8px 18px rgba(12,6,3,.5);
+}
+.cell-tag {
+  font-size: 10px; letter-spacing: .3em; padding: 12px 16px 0; color: var(--sub);
+}
+
+/* ---------- #stamp セクションの文脈を再現 ---------- */
+.stage {
+  position: relative; text-align: center;
+  padding: 18px 0 34px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+}
+.hill { position: absolute; bottom: 0; background: var(--ink); border-radius: 100% 100% 0 0; filter: blur(7px); pointer-events: none; }
+.hill-l { left: -40px; right: 52%; height: 64px; opacity: .06; }
+.hill-r { left: 56%; right: -50px; height: 46px; opacity: .05; }
+.sun-glow {
+  position: absolute; left: 25%; bottom: -10px; transform: translateX(-50%);
+  width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow), transparent 68%);
+  opacity: .5; pointer-events: none;
+}
+.lead {
+  position: relative; margin: 0 0 18px;
+  font-size: 12.5px; letter-spacing: .26em; padding-left: .26em;
+}
+.row { position: relative; display: flex; justify-content: center; align-items: center; gap: 46px; }
+@media (max-width: 470px) { .row { flex-direction: column; gap: 28px; } }
+.after-tag { font-size: 9.5px; letter-spacing: .26em; color: var(--sub); margin-top: 10px; }
+
+/* ---------- ボタン共通(全案共通の修正込み) ---------- */
+.stamp-btn {
+  position: relative; flex-shrink: 0;
+  width: 180px; height: 180px; border-radius: 50%; border: 0;
+  cursor: pointer; transform: rotate(-2deg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: transform .15s ease;
+  box-shadow: var(--btn-shadow), var(--btn-inset, inset 0 0 0 0 transparent);
+}
+.stamp-btn:active { transform: rotate(-2deg) scale(.96); }
+.stamp-btn .ring {
+  position: absolute; inset: 9px; border-radius: 50%;
+  border: 1.5px solid rgba(255,244,230,.5); pointer-events: none;
+}
+/* 文字組み: height固定をやめ、「走った印」「を押す」の意図した二列に(右列から読む) */
+.stamp-btn .label { display: flex; flex-direction: row-reverse; color: #fdf3e4; }
+.stamp-btn .label span { writing-mode: vertical-rl; line-height: 1; }
+.stamp-btn .once {
+  font-size: 9.5px; letter-spacing: .34em; padding-left: .34em;
+  color: rgba(253,243,228,.78); margin-top: 10px;
+}
+
+/* ---------- 案① マット朱印(朱肉の質感) ---------- */
+.v1 .stamp-btn {
+  background: radial-gradient(circle at 50% 44%, #d0793f, var(--accent) 58%, #b25f30 100%);
+  --btn-inset: inset 0 0 0 1px rgba(255,255,255,.12), inset 0 0 26px rgba(120,50,15,.15);
+}
+.v1 .stamp-btn .label { gap: 13px; }
+.v1 .stamp-btn .label span { font-size: 25px; font-weight: 600; letter-spacing: .14em; }
+
+/* ---------- 案② 白抜き篆刻(はんこ) ---------- */
+.v2 .stamp-btn {
+  background: radial-gradient(circle at 50% 46%, #cd7440, var(--accent) 62%, #ad5c2f 100%);
+  --btn-inset: inset 0 0 30px rgba(110,45,12,.22);
+}
+.v2 .stamp-btn .ring { inset: 11px; border-width: 1px; border-color: rgba(255,244,230,.42); }
+.v2 .stamp-btn .label { gap: 8px; align-items: center; }
+.v2 .stamp-btn .label span {
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 28px; font-weight: 700; letter-spacing: .04em;
+}
+.v2 .stamp-btn .once { margin-top: 6px; font-size: 9px; letter-spacing: .3em; padding-left: .3em; }
+
+/* ---------- 案③ 現行改良(コイン風を穏やかに) ---------- */
+.v3 .stamp-btn {
+  /* 現行: circle at 38% 30% + accent-ink(ダークでは縁が明るく反転していた)→ 中央寄り・縁は直値 */
+  background: radial-gradient(circle at 44% 36%, var(--accent-hi), var(--accent) 62%, #a5552a 118%);
+  --btn-inset: inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -14px 26px rgba(60,10,0,.10);
+}
+.v3 .stamp-btn .label { gap: 12px; }
+.v3 .stamp-btn .label span { font-size: 23px; font-weight: 600; letter-spacing: .18em; }
+
+/* ---------- 印影(押した後・本番と同一)— 連続性の確認用 ---------- */
+.seal-wrap { display: flex; flex-direction: column; align-items: center; }
+.seal {
+  position: relative; flex-shrink: 0;
+  width: 180px; height: 180px; border-radius: 50%;
+  transform: rotate(-3.5deg);
+  border: 3px solid var(--accent); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+}
+.seal .ring {
+  position: absolute; inset: 8px; border-radius: 50%;
+  border: 1px solid var(--accent-soft); pointer-events: none;
+}
+.seal .moku {
+  writing-mode: vertical-rl;
+  font-family: 'Zen Old Mincho', serif;
+  font-size: 46px; font-weight: 700; letter-spacing: .28em;
+  line-height: 1.1; padding-top: .28em;
+}
+.seal-date {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  writing-mode: vertical-rl; white-space: nowrap;
+  font-size: 10.5px; letter-spacing: .14em; color: var(--accent-ink);
+}
+.seal-date.y  { right: 26px; }
+.seal-date.md { left: 26px; }
+</style>
+</head>
+<body>
+
+<h1>押印ボタン 3案比較</h1>
+<p class="note">各案とも「二列の文字組み」「ダークの影の締め直し」は適用済み。右隣は押した後の印影(現行のまま)。</p>
+
+<!-- ============ 案① ============ -->
+<div class="variant v1">
+  <div class="vhead">案① マット朱印(朱肉の質感)</div>
+  <p class="vdesc">光沢ハイライトと球面の重い陰影を廃止。中心やや上からの低コントラストな朱で、金属ではなく朱肉のマットな面に。</p>
+  <div class="pair">
+    <div class="cell theme-light">
+      <div class="cell-tag">暁(ライト)</div>
+      <div class="stage">
+        <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+        <p class="lead">走っても、歩いても、今日の印を。</p>
+        <div class="row">
+          <button class="stamp-btn" type="button">
+            <span class="ring"></span>
+            <span class="label"><span>走った印</span><span>を押す</span></span>
+            <span class="once">一日一回まで</span>
+          </button>
+          <div class="seal-wrap">
+            <div class="seal">
+              <span class="ring"></span><span class="moku">黙走</span>
+              <span class="seal-date y">二〇二六</span><span class="seal-date md">七月十日</span>
+            </div>
+            <div class="after-tag">押した後(現行)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cell theme-dark">
+      <div class="cell-tag">未明(ダーク)</div>
+      <div class="stage">
+        <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+        <p class="lead">走っても、歩いても、今日の印を。</p>
+        <div class="row">
+          <button class="stamp-btn" type="button">
+            <span class="ring"></span>
+            <span class="label"><span>走った印</span><span>を押す</span></span>
+            <span class="once">一日一回まで</span>
+          </button>
+          <div class="seal-wrap">
+            <div class="seal">
+              <span class="ring"></span><span class="moku">黙走</span>
+              <span class="seal-date y">二〇二六</span><span class="seal-date md">七月十日</span>
+            </div>
+            <div class="after-tag">押した後(現行)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 案② ============ -->
+<div class="variant v2">
+  <div class="vhead">案② 白抜き篆刻(はんこ)</div>
+  <p class="vdesc">Zen Old Mincho(ロゴ・印影と同じ書体)の白抜き文字が円を埋める、彫った印章の趣。印影との血縁がいちばん濃い案。</p>
+  <div class="pair">
+    <div class="cell theme-light">
+      <div class="cell-tag">暁(ライト)</div>
+      <div class="stage">
+        <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+        <p class="lead">走っても、歩いても、今日の印を。</p>
+        <div class="row">
+          <button class="stamp-btn" type="button">
+            <span class="ring"></span>
+            <span class="label"><span>走った印</span><span>を押す</span></span>
+            <span class="once">一日一回まで</span>
+          </button>
+          <div class="seal-wrap">
+            <div class="seal">
+              <span class="ring"></span><span class="moku">黙走</span>
+              <span class="seal-date y">二〇二六</span><span class="seal-date md">七月十日</span>
+            </div>
+            <div class="after-tag">押した後(現行)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cell theme-dark">
+      <div class="cell-tag">未明(ダーク)</div>
+      <div class="stage">
+        <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+        <p class="lead">走っても、歩いても、今日の印を。</p>
+        <div class="row">
+          <button class="stamp-btn" type="button">
+            <span class="ring"></span>
+            <span class="label"><span>走った印</span><span>を押す</span></span>
+            <span class="once">一日一回まで</span>
+          </button>
+          <div class="seal-wrap">
+            <div class="seal">
+              <span class="ring"></span><span class="moku">黙走</span>
+              <span class="seal-date y">二〇二六</span><span class="seal-date md">七月十日</span>
+            </div>
+            <div class="after-tag">押した後(現行)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 案③ ============ -->
+<div class="variant v3">
+  <div class="vhead">案③ 現行改良(コイン風を穏やかに)</div>
+  <p class="vdesc">現行の立体感は残しつつ、ハイライトを中央寄りに・縁の反転(ダークで縁が明るくなる不具合)を解消。いちばん変化の小さい案。</p>
+  <div class="pair">
+    <div class="cell theme-light">
+      <div class="cell-tag">暁(ライト)</div>
+      <div class="stage">
+        <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+        <p class="lead">走っても、歩いても、今日の印を。</p>
+        <div class="row">
+          <button class="stamp-btn" type="button">
+            <span class="ring"></span>
+            <span class="label"><span>走った印</span><span>を押す</span></span>
+            <span class="once">一日一回まで</span>
+          </button>
+          <div class="seal-wrap">
+            <div class="seal">
+              <span class="ring"></span><span class="moku">黙走</span>
+              <span class="seal-date y">二〇二六</span><span class="seal-date md">七月十日</span>
+            </div>
+            <div class="after-tag">押した後(現行)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cell theme-dark">
+      <div class="cell-tag">未明(ダーク)</div>
+      <div class="stage">
+        <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+        <p class="lead">走っても、歩いても、今日の印を。</p>
+        <div class="row">
+          <button class="stamp-btn" type="button">
+            <span class="ring"></span>
+            <span class="label"><span>走った印</span><span>を押す</span></span>
+            <span class="once">一日一回まで</span>
+          </button>
+          <div class="seal-wrap">
+            <div class="seal">
+              <span class="ring"></span><span class="moku">黙走</span>
+              <span class="seal-date y">二〇二六</span><span class="seal-date md">七月十日</span>
+            </div>
+            <div class="after-tag">押した後(現行)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

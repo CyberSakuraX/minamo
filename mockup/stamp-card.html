@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>朝のスタンプカード — 黙走会</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;700&family=Klee+One:wght@400;600&family=Yusei+Magic&family=Zen+Kurenaido&family=Yomogi&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 36px 20px 90px;
+  background: #57524c; color: #efe9de;
+  font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+h1 { text-align: center; font-size: 19px; font-weight: 600; letter-spacing: .3em; padding-left: .3em; margin: 0 0 8px; }
+.note { text-align: center; font-size: 11.5px; letter-spacing: .1em; color: rgba(239,233,222,.72); margin: 0 auto 22px; max-width: 640px; line-height: 2; }
+.keys { max-width: 700px; margin: 0 auto 36px; font-size: 11.5px; line-height: 2; color: rgba(239,233,222,.85); border: 1px solid rgba(239,233,222,.2); border-radius: 8px; padding: 14px 20px; }
+.keys b { font-weight: 600; color: #efe9de; }
+
+.variant { max-width: 1020px; margin: 0 auto 56px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+
+/* ---------- テーマ(本番の変数を再現) ---------- */
+.cell { border-radius: 10px; overflow: hidden; background: var(--bg); color: var(--ink); }
+.theme-light {
+  --bg: #f7efe2; --paper: #fdf8ee; --ink: #38302a; --sub: #9a8b78; --line: rgba(90,66,42,.15);
+  --accent: #c8703c; --accent-ink: #a5552a;
+  --glow: rgba(240,170,110,.6);
+  --btn-shadow: 0 9px 20px rgba(180,110,60,.3);
+  --btn-shadow-press: 0 3px 7px rgba(180,110,60,.35);
+  --card-shadow: 0 2px 10px rgba(90,66,42,.1);
+}
+.theme-dark {
+  --bg: #211e23; --paper: #29252b; --ink: #e6ddcd; --sub: #998c7c; --line: rgba(230,221,205,.14);
+  --accent: #c8703c; --accent-ink: #d98a55;
+  --glow: rgba(240,170,110,.6);
+  --btn-shadow: 0 7px 16px rgba(12,6,3,.5);
+  --btn-shadow-press: 0 3px 6px rgba(12,6,3,.55);
+  --card-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+.cell-tag { font-size: 10px; letter-spacing: .3em; padding: 12px 16px 0; color: var(--sub); }
+
+/* ---------- 舞台 ---------- */
+.stage {
+  position: relative; text-align: center;
+  padding: 16px 0 34px; overflow: hidden; min-height: 470px;
+  display: flex; flex-direction: column; align-items: center;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 34px, #000 calc(100% - 34px), transparent);
+}
+.hill { position: absolute; bottom: 0; background: var(--ink); border-radius: 100% 100% 0 0; filter: blur(7px); pointer-events: none; }
+.hill-l { left: -40px; right: 52%; height: 64px; opacity: .06; }
+.hill-r { left: 56%; right: -50px; height: 46px; opacity: .05; }
+.sun-glow {
+  position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%);
+  width: 190px; height: 190px; border-radius: 50%;
+  background: radial-gradient(circle, var(--glow), transparent 68%);
+  opacity: .5; pointer-events: none;
+}
+.lead { position: relative; margin: 0 0 16px; font-size: 12.5px; letter-spacing: .26em; padding-left: .26em; }
+
+/* ---------- 押す前: 判(ゴム印の親しみ・澄んだ朱) ---------- */
+.btn-wrap { position: relative; margin-bottom: 20px; }
+.stampbtn {
+  position: relative; border: 0; cursor: pointer; padding: 0;
+  width: 168px; height: 168px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: var(--btn-shadow);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+.stampbtn:active { transform: translateY(4px) scale(.97, .95); box-shadow: var(--btn-shadow-press); }
+.stampbtn .label { display: flex; flex-direction: row-reverse; color: #fdf3e4; }
+.stampbtn .label span {
+  writing-mode: vertical-rl; line-height: 1; font-weight: 600;
+  font-feature-settings: 'palt' 1; /* 字面に応じた詰め(カーニング) */
+}
+.stampbtn .once { margin-top: 11px; font-size: 9.5px; letter-spacing: .34em; padding-left: .34em; color: rgba(253,243,228,.8); }
+
+/* ---- 文字組み4案 ---- */
+/* ① 縦二列・中央揃え: 「を押す」を天地中央に */
+.t1 .label { align-items: center; gap: 13px; }
+.t1 .label span { font-size: 24px; letter-spacing: .12em; }
+/* ② 縦二列・字割り: 判子の割付。二列の天地を揃える */
+.t2 .label { align-items: flex-start; gap: 13px; }
+.t2 .label span { font-size: 24px; letter-spacing: .12em; }
+.t2 .label span:last-child { letter-spacing: .66em; }
+/* ③ 縦一列: 細く静かに一本 */
+.t3 .label { display: block; writing-mode: vertical-rl; }
+.t3 .label span { font-size: 16.5px; letter-spacing: .12em; }
+/* ④ 横二行: ゴム印らしい横組み */
+.t4 .label { flex-direction: column; align-items: center; gap: 7px; }
+.t4 .label span { writing-mode: horizontal-tb; font-size: 21px; letter-spacing: .14em; padding-left: .14em; }
+
+/* ---- 書体の検討(モダン×手書き感) ---- */
+.f-mincho .label span, .f-mincho .once { font-family: 'Noto Serif JP', serif; }
+.f-klee .label span, .f-klee .once { font-family: 'Klee One', cursive; }
+.f-klee .label span { font-weight: 600; font-size: 32px; letter-spacing: .05em; padding-left: .05em; }
+/* 採用形: 手書きの自然さ = 縦長の字形 + 右肩上がりの傾き。円を文字で満たす */
+.f-klee .label { transform: rotate(-2.5deg); gap: 4px; }
+.f-klee .label span { transform: scale(.9, 1.09); }
+.f-klee .once { transform: rotate(-2.5deg); margin-top: 8px; }
+.f-yusei .label span, .f-yusei .once { font-family: 'Yusei Magic', sans-serif; }
+.f-yusei .label span { font-weight: 400; font-size: 21.5px; letter-spacing: .07em; padding-left: .07em; }
+.f-kurenaido .label span, .f-kurenaido .once { font-family: 'Zen Kurenaido', sans-serif; }
+.f-kurenaido .label span { font-weight: 400; font-size: 24px; letter-spacing: .05em; padding-left: .05em; }
+.f-yomogi .label span, .f-yomogi .once { font-family: 'Yomogi', cursive; }
+.f-yomogi .label span { font-weight: 400; font-size: 22px; letter-spacing: .05em; padding-left: .05em; }
+.f-klee .once, .f-yusei .once, .f-kurenaido .once, .f-yomogi .once { font-size: 10px; letter-spacing: .3em; padding-left: .3em; }
+
+/* ---- 文字組み一覧(比較ストリップ) ---- */
+.type-strip { display: flex; flex-wrap: wrap; gap: 22px 26px; justify-content: center; padding: 26px 12px 22px; }
+.type-item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.type-item .stampbtn { cursor: default; pointer-events: none; }
+.type-item .t-cap { font-size: 10.5px; letter-spacing: .18em; color: var(--sub); }
+
+/* 押す所作: 押し込む → 持ち上がる(一度きり) */
+.press-seq .stampbtn { animation: pressLift .5s ease both; pointer-events: none; }
+@keyframes pressLift {
+  0%   { transform: none; opacity: 1; }
+  24%  { transform: translateY(7px) scale(.96, .94); opacity: 1; }
+  62%  { transform: translateY(-14px) scale(1.01); opacity: .55; }
+  100% { transform: translateY(-26px); opacity: 0; }
+}
+.pressed .btn-wrap { display: none; }
+
+/* ---------- カード(台紙) ---------- */
+.card-zone { position: relative; display: flex; flex-direction: column; align-items: center; }
+.card {
+  position: relative;
+  width: 316px; max-width: 92%;
+  background: var(--paper);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px 14px 16px;
+  box-shadow: var(--card-shadow);
+}
+.pressed .card { animation: dip .34s ease .1s both; }
+@keyframes dip { 0% { transform: none; } 45% { transform: translateY(3px); } 100% { transform: none; } }
+.card .hole {
+  position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--bg); box-shadow: inset 0 1px 2px rgba(0,0,0,.22);
+}
+.slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px 6px; }
+.slot { position: relative; height: 52px; display: flex; align-items: center; justify-content: center; }
+.slot::before {
+  content: ''; position: absolute; width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--line);
+}
+.slot svg { position: relative; width: 50px; height: 50px; }
+/* 今日の一枚: ぽん、と着地 */
+.pressed .slot.today svg { animation: pon .42s cubic-bezier(.2, 1.35, .45, 1) .32s both; }
+@keyframes pon {
+  0%   { transform: scale(1.7); opacity: 0; }
+  55%  { transform: scale(.93); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+/* たまったカードの重なり(厚み) */
+.stack { display: flex; flex-direction: column; align-items: center; margin-top: -1px; }
+.stack i {
+  display: block; height: 4px; border-radius: 0 0 6px 6px;
+  background: var(--paper); border: 1px solid var(--line); border-top: 0;
+  box-shadow: var(--card-shadow);
+}
+.card-note { margin-top: 10px; font-size: 10px; letter-spacing: .22em; padding-left: .22em; color: var(--sub); }
+
+/* ---------- 押した後の言葉 ---------- */
+.after { display: none; flex-direction: column; align-items: center; gap: 6px; margin-top: 16px; }
+.pressed .after { display: flex; animation: zAppear .5s ease .3s both; }
+@keyframes zAppear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.seal-count { font-size: 15px; letter-spacing: .12em; color: var(--ink); }
+.seal-count b { font-size: 30px; color: var(--ink); padding: 0 6px; font-weight: 500; }
+.seal-notes { display: flex; flex-direction: column; gap: 5px; align-items: center; margin-top: 4px; }
+.seal-notes .n1 { font-size: 12px; letter-spacing: .14em; color: var(--sub); white-space: nowrap; }
+.seal-notes .n2 { font-size: 10.5px; letter-spacing: .12em; color: var(--sub); white-space: nowrap; }
+
+/* ---------- モック用コントロール ---------- */
+.controls {
+  margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+  font-size: 11px; letter-spacing: .08em; color: rgba(239,233,222,.8);
+}
+.controls .lbl b { font-weight: 600; color: #efe9de; font-size: 13px; padding: 0 2px; }
+.controls input[type="range"] { width: 220px; accent-color: #c8703c; }
+.controls button {
+  border: 1px solid rgba(239,233,222,.35); background: none; color: rgba(239,233,222,.85);
+  font-size: 10.5px; letter-spacing: .1em; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.controls button:hover { border-color: rgba(239,233,222,.7); }
+.controls label { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.controls .hint { flex-basis: 100%; font-size: 10px; color: rgba(239,233,222,.5); }
+</style>
+</head>
+<body>
+
+<h1>朝のスタンプカード</h1>
+<p class="note">実際に押せます。判を押すと、カードに今日のスタンプが「ぽん」と残ります。</p>
+
+<div class="keys">
+  <div><b>加工っぽさをやめました</b> — かすれ・グランジのフィルタは全部捨て、ゴム印の澄んだ朱に。手の跡は「毎日すこし違う角度と位置」だけで表します。</div>
+  <div><b>懐かしくて温かい</b> — 夏の朝のスタンプカード。押した分だけカードが埋まり、いっぱいになったカードは下に重なって、厚みになっていきます(日付のマスがないので、休んだ日が空白として残ることはありません)。</div>
+  <div><b>押す手応え</b> — 押し込む → 判が持ち上がる → カードに「ぽん」と着地、の三拍。本番ではこの瞬間に夜明け色の明転が重なります。</div>
+  <div>絵柄は<b>日替わり</b>が既定です(係の人の気分で判が変わる)。走の印 / 花丸 / 朝日 / 水面(一粒の月と波紋)の4種が日付シードで混ざります。単一絵柄も試せます。</div>
+</div>
+
+<div class="variant" id="type-compare">
+  <div class="vhead" style="font-size:13px; letter-spacing:.18em; margin-bottom:10px;">「走った印を押す」書体の検討(④横二行・palt適用)</div>
+  <div class="pair"></div>
+</div>
+
+<div class="variant" id="concept-c">
+  <div class="pair"></div>
+  <div class="controls"></div>
+</div>
+
+<script>
+/* ---------- 乱数(日付シード・決定的) ---------- */
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  };
+}
+function rng(seed) {
+  let a = xmur3(seed)();
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const FONT_ZEN = "'Zen Old Mincho', serif";
+
+/* ---------- 花丸のパス(手描きの一筆) ---------- */
+function hanamaruPaths(rnd) {
+  const petals = 8, R = 30, amp = 7.5;
+  const ph = rnd() * 6.28, drift = (rnd() - .5) * 3;
+  let d = '';
+  const N = 120;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, a = -1.2 + t * 6.55; /* 一周とすこし重ねる */
+    const r = R + amp * Math.sin(petals * a + ph) + drift * Math.sin(a * 1.7);
+    const x = 50 + Math.cos(a) * r, y = 50 + Math.sin(a) * r;
+    d += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }
+  /* 中の渦(内から外へ) */
+  let s = '';
+  const M = 70;
+  for (let i = 0; i <= M; i++) {
+    const t = i / M, a = ph + t * 6.28 * 1.9;
+    const r = 2.5 + t * 13.5 + (rnd() - .5) * .8;
+    const x = 50 + Math.cos(a) * r, y = 50 + Math.sin(a) * r;
+    s += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }
+  return { ring: d, swirl: s };
+}
+
+/* ---------- 絵柄いろいろ(係の人の気分で日替わり) ---------- */
+const MOTIF_SET = ['run', 'hanamaru', 'asahi', 'minamo'];
+function motifBody(motif, r) {
+  if (motif === 'hanamaru') {
+    const p = hanamaruPaths(r);
+    return `<path d="${p.ring}" fill="none" stroke="var(--accent)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="${p.swirl}" fill="none" stroke="var(--accent)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if (motif === 'asahi') {
+    /* 朝日: 地平線から顔を出す太陽と光 */
+    let rays = '';
+    for (let k = 0; k < 5; k++) {
+      const a = Math.PI + (Math.PI * (k + 1)) / 6 + (r() - .5) * .06;
+      const x1 = 50 + Math.cos(a) * 26, y1 = 64 + Math.sin(a) * 26;
+      const x2 = 50 + Math.cos(a) * 36, y2 = 64 + Math.sin(a) * 36;
+      rays += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+        stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>`;
+    }
+    return `<path d="M32 64 a18 18 0 0 1 36 0" fill="none" stroke="var(--accent)" stroke-width="4.6" stroke-linecap="round"/>
+            <line x1="18" y1="64" x2="82" y2="64" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+            ${rays}`;
+  }
+  if (motif === 'minamo') {
+    /* 水面: 一粒の月と、ひろがる波紋 */
+    const w = t => `M${(50 - t).toFixed(1)} ${(52 + (t - 14) * .9).toFixed(1)} q ${t} ${7 + (r() - .5) * 2} ${t * 2} 0`;
+    return `<circle cx="50" cy="30" r="4.5" fill="var(--accent)"/>
+            <path d="${w(14)}" fill="none" stroke="var(--accent)" stroke-width="4.4" stroke-linecap="round"/>
+            <path d="${w(22)}" fill="none" stroke="var(--accent)" stroke-width="4.2" stroke-linecap="round"/>
+            <path d="${w(30)}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>`;
+  }
+  /* run: 丸枠+走(ゴム印) */
+  return `<circle cx="50" cy="50" r="38" fill="none" stroke="var(--accent)" stroke-width="4"/>
+          <text x="50" y="52" text-anchor="middle" dominant-baseline="central" font-size="44" font-weight="700"
+            fill="var(--accent)" font-family="${FONT_ZEN}">走</text>`;
+}
+
+/* ---------- スタンプ1個(澄んだゴム印・手の揺れは角度と位置だけ) ---------- */
+function stampSVG(motifChoice, seedStr, isToday) {
+  const r = rng(seedStr);
+  const motif = motifChoice === 'daily' ? MOTIF_SET[Math.floor(r() * MOTIF_SET.length)] : motifChoice;
+  const rot = ((r() - .5) * 13).toFixed(1);
+  const dx = ((r() - .5) * 4).toFixed(1);
+  const dy = ((r() - .5) * 4).toFixed(1);
+  const op = (isToday ? .95 : .78 + r() * .16).toFixed(2);
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">
+    <g transform="translate(${dx} ${dy}) rotate(${rot} 50 50)" opacity="${op}">${motifBody(motif, r)}</g>
+  </svg>`;
+}
+
+/* ---------- 状態 ---------- */
+const state = { n: 1, day: 0, motif: 'daily', tvar: 't4', font: 'f-klee' };
+const PER_CARD = 10;
+
+function btnHTML(tvar, tag, fontCls) {
+  return `<${tag} class="stampbtn ${tvar} ${fontCls || ''}" ${tag === 'button' ? 'type="button" aria-label="走った印を押す"' : ''}>
+    <span class="label"><span>走った印</span><span>を押す</span></span>
+    <span class="once">一日一回まで</span>
+  </${tag}>`;
+}
+
+function stageHTML() {
+  return `
+    <div class="hill hill-l"></div><div class="hill hill-r"></div><div class="sun-glow"></div>
+    <p class="lead">走っても、歩いても、今日の印を。</p>
+    <div class="btn-wrap">
+      ${btnHTML(state.tvar, 'button', state.font)}
+    </div>
+    <div class="card-zone">
+      <div class="card">
+        <span class="hole"></span>
+        <div class="slots"></div>
+      </div>
+      <div class="stack"></div>
+      <div class="card-note"></div>
+    </div>
+    <div class="after">
+      <div class="seal-count">これで<b class="total"></b>日目です</div>
+      <div class="seal-notes">
+        <div class="n1">今日は、もう印を残しています</div>
+        <div class="n2">また、あした。</div>
+      </div>
+    </div>`;
+}
+
+function renderStage(stage) {
+  const pressed = stage.classList.contains('pressed');
+  const { n, day, motif } = state;
+  const seedBase = 'minamo-card/' + (20260710 + day);
+  const prevOnCard = (n - 1) % PER_CARD;           /* 今朝の時点でこのカードにある印 */
+  const shown = pressed ? prevOnCard + 1 : prevOnCard;
+  const doneCards = Math.floor((n - 1) / PER_CARD); /* 下に重なった満了カード */
+  const slots = [];
+  for (let i = 0; i < PER_CARD; i++) {
+    if (i < shown) {
+      const absIdx = (n - shown) + i + 1;           /* 累計で何日目の印か */
+      const isToday = pressed && i === shown - 1;
+      slots.push(`<span class="slot${isToday ? ' today' : ''}">${stampSVG(motif, seedBase + '/d' + absIdx, isToday)}</span>`);
+    } else {
+      slots.push('<span class="slot"></span>');
+    }
+  }
+  stage.querySelector('.slots').innerHTML = slots.join('');
+  const bars = Math.min(10, doneCards);
+  const rs = rng(seedBase + '/pile');
+  stage.querySelector('.stack').innerHTML = Array.from({ length: bars }, (_, i) =>
+    `<i style="width:${(300 - i * 3).toFixed(0)}px; transform: translateX(${((rs() - .5) * 7).toFixed(1)}px)"></i>`).join('');
+  stage.querySelector('.card-note').textContent = doneCards > 0 ? `いっぱいになったカードが、下に ${doneCards} 枚` : '';
+  stage.querySelector('.total').textContent = n;
+}
+
+function renderAll() { document.querySelectorAll('.stage').forEach(renderStage); }
+
+/* 書体比較ストリップ(④横二行で統一) */
+const F_CAPS = {
+  'f-mincho':    '明朝(現行)',
+  'f-klee':      'Klee One | 縦長・右肩上がり(採用)',
+  'f-yusei':     'Yusei Magic | マーカー・元気',
+  'f-kurenaido': 'Zen Kurenaido | ボールペン・軽やか',
+  'f-yomogi':    'Yomogi | 鉛筆・素朴'
+};
+const tPair = document.querySelector('#type-compare .pair');
+['light', 'dark'].forEach(theme => {
+  const cell = document.createElement('div');
+  cell.className = 'cell theme-' + theme;
+  cell.innerHTML = `<div class="cell-tag">${theme === 'light' ? '暁(ライト)' : '未明(ダーク)'}</div>
+    <div class="type-strip">${Object.keys(F_CAPS).map(f =>
+      `<div class="type-item">${btnHTML('t4', 'div', f)}<span class="t-cap">${F_CAPS[f]}</span></div>`).join('')}</div>`;
+  tPair.appendChild(cell);
+});
+
+const pair = document.querySelector('#concept-c .pair');
+['light', 'dark'].forEach(theme => {
+  const cell = document.createElement('div');
+  cell.className = 'cell theme-' + theme;
+  cell.innerHTML = `<div class="cell-tag">${theme === 'light' ? '暁(ライト)' : '未明(ダーク)'}</div>
+    <div class="stage">${stageHTML()}</div>`;
+  pair.appendChild(cell);
+  const stage = cell.querySelector('.stage');
+  stage.querySelector('.stampbtn').addEventListener('click', () => {
+    if (stage.classList.contains('pressed') || stage.classList.contains('press-seq')) return;
+    stage.classList.add('press-seq');
+    setTimeout(() => { stage.classList.remove('press-seq'); stage.classList.add('pressed'); renderStage(stage); }, 430);
+  });
+});
+
+const ctrl = document.querySelector('#concept-c .controls');
+ctrl.innerHTML = `
+  <span class="lbl">累計 <b class="nval">1</b> 日目と仮定</span>
+  <input type="range" min="1" max="365" value="1" step="1">
+  <span>絵柄:
+    <label><input type="radio" name="motif" value="daily" checked> 日替わり</label>
+    <label><input type="radio" name="motif" value="run"> 走の印</label>
+    <label><input type="radio" name="motif" value="hanamaru"> 花丸</label>
+  </span>
+  <span>書体:
+    <label><input type="radio" name="fvar" value="f-mincho"> 明朝</label>
+    <label><input type="radio" name="fvar" value="f-klee" checked> Klee</label>
+    <label><input type="radio" name="fvar" value="f-yusei"> Yusei</label>
+    <label><input type="radio" name="fvar" value="f-kurenaido"> Kurenaido</label>
+    <label><input type="radio" name="fvar" value="f-yomogi"> Yomogi</label>
+  </span>
+  <button type="button" class="reroll">別の日の印を見る</button>
+  <button type="button" class="reset">押す前に戻す</button>
+  <span class="hint">スライダーと各ボタンはモック用の装置です(本番には置きません)。</span>`;
+ctrl.querySelector('input[type="range"]').addEventListener('input', e => {
+  state.n = +e.target.value;
+  ctrl.querySelector('.nval').textContent = e.target.value;
+  renderAll();
+});
+ctrl.querySelectorAll('input[name="motif"]').forEach(radio =>
+  radio.addEventListener('change', e => { state.motif = e.target.value; renderAll(); }));
+ctrl.querySelectorAll('input[name="fvar"]').forEach(radio =>
+  radio.addEventListener('change', e => {
+    state.font = e.target.value;
+    document.querySelectorAll('#concept-c .stampbtn').forEach(b => {
+      b.classList.remove(...Object.keys(F_CAPS));
+      b.classList.add(state.font);
+    });
+  }));
+ctrl.querySelector('.reroll').addEventListener('click', () => { state.day++; renderAll(); });
+ctrl.querySelector('.reset').addEventListener('click', () => {
+  document.querySelectorAll('.stage').forEach(s => { s.classList.remove('pressed', 'press-seq'); renderStage(s); });
+});
+
+renderAll();
+</script>
+</body>
+</html>

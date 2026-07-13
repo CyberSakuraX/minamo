@@ -28,6 +28,11 @@
 <meta name="description" content="各自の場所で、黙って走る。主催者はいない。走った日に、走った証をこの一枚に残すだけ。連絡手段なし・ランキングなし・ログインなし・広告なし・課金なし。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><g transform='rotate(-8 16 16)'><circle cx='16' cy='16' r='12.5' fill='none' stroke='%23c8703c' stroke-width='2.4'/><circle cx='16' cy='16' r='9' fill='none' stroke='%23c8703c' stroke-width='.8' opacity='.5'/></g><circle cx='26.5' cy='6' r='2' fill='%23eab88a'/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- iOSのホーム画面に登録したときにWebアプリとして開く(Safariのバーが消える) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="黙走会">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <!-- 出会いの装備: URLは #黙走会 の投稿で流通する(憲章3条)。ドメイン移行時は og:url / og:image の絶対URLを差し替えること -->
 <meta property="og:site_name" content="黙走会">
 <meta property="og:title" content="黙走会 — minamo.run">
@@ -614,7 +619,7 @@ footer { margin: 52px 28px 0; text-align: center; }
       </div>
       <div id="bow-banner" hidden>
         <span class="banner-dot"></span>
-        <span class="txt">今日のあなたの走りに、誰かが会釈しました。</span>
+        <span class="txt" id="bow-banner-txt">今日のあなたの走りに、誰かが会釈しました。</span>
       </div>
       <div id="bow-lead"></div>
       <div id="bow-field"></div>
@@ -833,6 +838,7 @@ footer { margin: 52px 28px 0; text-align: center; }
   var elTodayCount = $('today-count');
   var elSec03 = $('sec03'), elBanner = $('bow-banner'), elField = $('bow-field'), elCaption = $('bow-caption');
   var elBowLead = $('bow-lead');
+  var elBannerTxt = $('bow-banner-txt');
 
   var showEditor = false;
 
@@ -842,6 +848,7 @@ footer { margin: 52px 28px 0; text-align: center; }
   var apiOk = false;              // today 取得成功で層3のカードを開く
   var stampedThisSession = false; // 押印直後は手元の表示を +1 してよい(docs/02 §8)
   var received = false;           // 受信バナー(1ビット)
+  var receivedDate = null;        // 会釈が届いた「あなたの走りの日」(anon.date) — 今日/きのうの出し分けに使う
 
   function apiFetch(path, opts) {
     if (!API_BASE) return Promise.reject(new Error('api off'));
@@ -882,7 +889,7 @@ footer { margin: 52px 28px 0; text-align: center; }
     if (anon.date !== jstKey(0) && anon.date !== jstKey(-1)) return;
     apiFetch('/api/bow?date=' + encodeURIComponent(anon.date) + '&id=' + encodeURIComponent(anon.id), { method: 'GET' })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d && d.bowed) { received = true; render(); } })
+      .then(function (d) { if (d && d.bowed) { received = true; receivedDate = anon.date; render(); } })
       .catch(function () {});
   }
 
@@ -963,6 +970,12 @@ footer { margin: 52px 28px 0; text-align: center; }
     elSec03.hidden = !apiOk;
     if (apiOk) {
       elBanner.hidden = !received;
+      if (received) {
+        // 会釈が届いた「あなたの走りの日」を静かに区別する:
+        // 今日走ってすぐ受け取った会釈と、きのうの走りに宛てられた会釈を混同させない
+        var whenLabel = (receivedDate === t) ? '今日' : 'きのう';
+        elBannerTxt.textContent = whenLabel + 'のあなたの走りに、誰かが会釈しました。';
+      }
       renderDots(t, stamped, shownCount || 0, bowed);
       /* 状態別の言葉: ガイド行(光の上)がいま何ができるかを言い、説明(光の下)が作法を添える */
       var lead, cap;

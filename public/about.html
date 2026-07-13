@@ -43,8 +43,15 @@ body {
   font-family: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   -webkit-font-smoothing: antialiased;
 }
-.page { max-width: 460px; margin-inline: auto; padding: 68px 32px 80px; }
-p { text-wrap: pretty; }
+.page { max-width: 460px; margin-inline: auto; padding: 68px 20px 80px; }
+/* 和文の折り返し: 文節単位でやわらかく折り、行頭・行末の禁則を厳密に。
+   auto-phrase 未対応の環境では通常の折り返しに戻るだけで害はない */
+p {
+  text-wrap: pretty;
+  word-break: auto-phrase;
+  line-break: strict;
+  hanging-punctuation: allow-end;
+}
 
 .logo { font-family: 'Klee One', cursive; font-size: 22px; font-weight: 600; letter-spacing: .2em; }
 .logo a { color: inherit; text-decoration: none; }
@@ -77,42 +84,31 @@ a.ext { color: var(--accent-ink); text-decoration: underline; text-underline-off
   <div class="logo"><a href="./">黙走会</a></div>
   <div class="pagename">この会について</div>
 
-  <p class="intro">
-    黙走会は、誰も運営しないランニングコミュニティの「型」です。
-    主催者はいません。集合場所も、集合時刻もありません。
-    毎日走る人は毎日、週にいちどの人は週にいちど。
-    走った日に、走った証をあの一枚に静かに残す。それだけの場所です。
-  </p>
+  <p class="intro">黙走会は、誰も運営しないランニングコミュニティの「型」です。主催者はいません。集合場所も、集合時刻もありません。毎日走る人は毎日、週にいちどの人は週にいちど。走った日に、走った証をあの一枚に静かに残す。それだけの場所です。</p>
 
   <h2>三つの層</h2>
   <div class="layer">
     <div class="name">わたしの積み重ね<small>非公開</small></div>
-    <p>走った印は、あなたの端末の中だけに残ります。距離や時間を書き添えても、どこにも送られません。
-    累計だけが増えていき、休んでも減りません。</p>
+    <p>走った印は、あなたの端末の中だけに残ります。距離や時間を書き添えても、どこにも送られません。累計だけが増えていき、休んでも減りません。</p>
   </div>
   <div class="layer">
     <div class="name">今日の静かなつながり<small>匿名</small></div>
-    <p>印を押すと「今日、共に走った人」の数がひとつ増えます。誰の数字でもない、今日だけの数。
-    明日には、またゼロから始まります。</p>
+    <p>印を押すと「今日、共に走った人」の数がひとつ増えます。誰の数字でもない、今日だけの数。明日には、またゼロから始まります。</p>
   </div>
   <div class="layer">
     <div class="name">会釈<small>匿名・一方向</small></div>
-    <p>今日走っただれかの光に、一日に一度だけ、そっと触れられます。
-    誰からかは伝わらない、返せない会釈です。翌日にはすべて消えます。</p>
+    <p>今日走っただれかの光に、一日に一度だけ、そっと触れられます。誰からかは伝わらない、返せない会釈です。届いた合図は「今日」か「きのう」、いつの走りに宛てられたかだけを静かに知らせ、そのまま消えていきます。</p>
   </div>
 
   <h2>ないもの</h2>
-  <p>連絡手段・ランキング・ログイン・広告・課金。この会には、どれもありません。
-  つながるために、増やさない。比較ではなく、気配。</p>
+  <p>連絡手段・ランキング・ログイン・広告・課金。この会には、どれもありません。つながるために、増やさない。比較ではなく、気配。</p>
   <p class="quiet">走った記録がネットワークに出ることはありません。日々の人数と会釈は匿名のまま、翌日に消えます。</p>
 
   <h2>名について</h2>
-  <p>黙走(もくそう)は行為の名。みなも(minamo)は、その積み重ねが映る風景の名です。
-  黙って走った一日が一粒の光になり、粒が集まって、水面になる。</p>
+  <p>黙走(もくそう)は行為の名。みなも(minamo)は、その積み重ねが映る風景の名です。黙って走った一日が一粒の光になり、粒が集まって、水面になる。</p>
 
   <h2>複製自由</h2>
-  <p>この型は誰のものでもありません。
-  このページごと複製して、あなたの街の黙走会にしてかまいません。</p>
+  <p>この型は誰のものでもありません。このページごと複製して、あなたの街の黙走会にしてかまいません。</p>
   <p class="quiet">ソースコードは <a class="ext" href="https://github.com/CyberSakuraX/minamo">GitHub</a> にあります(MIT License)。</p>
 
   <a class="back" href="./">← 頁にもどる</a>

@@ -709,6 +709,9 @@ footer { margin: 52px 28px 0; text-align: center; }
     return (b && b.date === todayKey()) ? b : null;
   }
   function anonState() { return jsonState('anon'); }
+  // きのうの anonId を1つだけ退避しておくスロット。押印で anon を上書きしても、
+  // TTL内の「きのうの走りへの会釈」を端末側から失わないための小さな控え
+  function anonPrevState() { return jsonState('anonPrev'); }
 
   /* ---------- 決定的乱数(FNV-1a → mulberry32) ---------- */
   function rng(seedStr) {
@@ -863,7 +866,14 @@ footer { margin: 52px 28px 0; text-align: center; }
     apiFetch('/api/stamp', { method: 'POST' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
-        if (d && d.anonId) lsSet('anon', JSON.stringify({ date: d.date, id: d.anonId }));
+        if (!d || !d.anonId) return;
+        // きのう分の anonId を anonPrev に退避してから、今日の anonId を書く。
+        // これで押印+リロード後も「きのうの走りへの会釈」バナーが端末から消えない
+        var prev = anonState();
+        if (prev && prev.date === jstKey(-1)) {
+          lsSet('anonPrev', JSON.stringify(prev));
+        }
+        lsSet('anon', JSON.stringify({ date: d.date, id: d.anonId }));
       })
       .catch(function () {});
   }
@@ -884,13 +894,26 @@ footer { margin: 52px 28px 0; text-align: center; }
   }
 
   function checkBowReceived() {
-    var anon = anonState();
-    if (!anon || !anon.id) return;
-    if (anon.date !== jstKey(0) && anon.date !== jstKey(-1)) return;
-    apiFetch('/api/bow?date=' + encodeURIComponent(anon.date) + '&id=' + encodeURIComponent(anon.id), { method: 'GET' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d && d.bowed) { received = true; receivedDate = anon.date; render(); } })
-      .catch(function () {});
+    var t = jstKey(0), y = jstKey(-1);
+    // 今日の anon と、退避してあるきのうの anonPrev の両方を照会する。
+    // 押印直後にリロードしても、TTL内のきのうの気配が消えないように
+    var anons = [anonState(), anonPrevState()]
+      .filter(function (a) { return a && a.id && (a.date === t || a.date === y); });
+    anons.forEach(function (anon) {
+      apiFetch('/api/bow?date=' + encodeURIComponent(anon.date) + '&id=' + encodeURIComponent(anon.id), { method: 'GET' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !d.bowed) return;
+          // 「今日」の会釈は「きのう」より優先。並行して両方bowedが返っても、
+          // 一度today側で立ったバナーは、後から届いたyesterday側で上書きしない
+          if (!received || (anon.date === t && receivedDate !== t)) {
+            received = true;
+            receivedDate = anon.date;
+            render();
+          }
+        })
+        .catch(function () {});
+    });
   }
 
   /* ---------- 風景の複利: total のみから決定的に描画(docs/07) ---------- */
@@ -1314,6 +1337,14 @@ footer { margin: 52px 28px 0; text-align: center; }
   window.addEventListener('hashchange', applyFragment);
 
   /* ---------- 起動 ---------- */
+  // 起動時に古い anonPrev(もはや「きのう」ですらないもの)を静かに掃除する。
+  // 動作には影響しないが、端末に長く残らないように
+  (function () {
+    var prev = anonPrevState();
+    if (prev && prev.date !== jstKey(-1)) {
+      try { localStorage.removeItem('anonPrev'); } catch (e) {}
+    }
+  })();
   applyFragment(); // フラグメントは最初の描画前に読み、URLから即消す
   render();
   if (API_BASE) {

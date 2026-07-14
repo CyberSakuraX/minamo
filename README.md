@@ -25,6 +25,9 @@
    行儀よくするなら `index.html` 末尾のスクリプトの `API_BASE` を空文字 `''` に
 3. あなたの街にも「今日、共に走った人」と会釈を灯すなら、`worker/` を自分の Cloudflare アカウントに
    デプロイして `API_BASE` を差し替えます(無料枠で足ります) → [docs/05_デプロイ手順.md](docs/05_デプロイ手順.md)
+4. あなたの街のタイムゾーンに合わせるなら、`public/js/minamo-core.js` と `worker/src/index.js` の
+   `TIME_ZONE` を同じ値に(例: `'America/New_York'`)。両者がズレると層1と層2/3で日の変わる瞬間が
+   分かれます(データ喪失はなく、TTLで消える範囲の静かなズレに留まります)
 
 ## docs
 

@@ -6,6 +6,11 @@
 const TTL = 129600; // 36時間。日付キー + TTL で「翌日にはすべて消える」(削除処理・cronは書かない)
 const ID_RE = /^[a-z0-9]{12}$/;
 
+// 「今日」を判定するタイムゾーン。憲章7条の複製時はこの値と public/js/minamo-core.js の
+// TIME_ZONE を同じ値に(ズレると層1と層2/3で日の変わる瞬間が分かれる。データ喪失はなく、
+// TTLで消える範囲の静かなズレに留まる)
+const TIME_ZONE = "Asia/Tokyo";
+
 const ALLOWED_ORIGINS = [
   "https://minamo-eyu.pages.dev", // 本番(Cloudflare Pages)。minamo.run 接続時に追加(docs/05 §4)
   "http://localhost:8788",        // wrangler pages dev
@@ -23,9 +28,9 @@ const RL_MAX = 10;       // 10回/分/IP
 const RL_WINDOW = 60000;
 const RL_CAP = 1000;
 
-function jstDate(offsetDays) {
+function dayKey(offsetDays) {
   const d = new Date(Date.now() + (offsetDays || 0) * 86400000);
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(d);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(d);
 }
 
 function corsHeaders(request) {
@@ -78,14 +83,14 @@ function rateLimited(request) {
 async function stamp(request, env) {
   if (foreignBrowserOrigin(request)) return json(request, { ok: false }, 403);
   if (rateLimited(request)) return json(request, { ok: false }, 429);
-  const date = jstDate(0);
+  const date = dayKey(0);
   const anonId = makeAnonId();
   await env.MINAMO_KV.put(`runner:${date}:${anonId}`, "1", { expirationTtl: TTL });
   return json(request, { date, anonId });
 }
 
 async function today(request, env) {
-  const date = jstDate(0);
+  const date = dayKey(0);
   const now = Date.now();
   if (todayCache && todayCache.date === date && now - todayCache.fetchedAt < 300000) {
     return json(request, { date, count: todayCache.count, dots: todayCache.dots }, 200, {
@@ -122,7 +127,7 @@ async function bowSend(request, env) {
     return json(request, { ok: false }, 400);
   }
   if (typeof to !== "string" || !ID_RE.test(to)) return json(request, { ok: false }, 400);
-  const date = jstDate(0);
+  const date = dayKey(0);
   const exists = await env.MINAMO_KV.get(`runner:${date}:${to}`);
   if (exists === null) return json(request, { ok: false }, 404);
   await env.MINAMO_KV.put(`bow:${date}:${to}`, "1", { expirationTtl: TTL });
@@ -133,7 +138,7 @@ async function bowCheck(request, env, url) {
   const date = url.searchParams.get("date") || "";
   const id = url.searchParams.get("id") || "";
   if (!ID_RE.test(id)) return json(request, { ok: false }, 400);
-  if (date !== jstDate(0) && date !== jstDate(-1)) return json(request, { ok: false }, 400);
+  if (date !== dayKey(0) && date !== dayKey(-1)) return json(request, { ok: false }, 400);
   const v = await env.MINAMO_KV.get(`bow:${date}:${id}`);
   return json(request, { bowed: v !== null });
 }

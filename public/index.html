@@ -360,6 +360,29 @@ header {
 #sum-line .val { color: var(--ink); }
 #no-total { font-size: 12.5px; color: var(--sub); letter-spacing: .12em; }
 
+/* バックアップ/復元 — 既存 .text-link を踏襲し、朱は使わず sub 色で控えめに */
+#backup-links {
+  margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line);
+  display: flex; gap: 18px; flex-wrap: wrap;
+}
+#backup-links .text-link {
+  font-size: 11.5px; letter-spacing: .12em; color: var(--sub);
+  padding: 4px 0; cursor: pointer;
+}
+#backup-confirm {
+  margin-top: 12px; padding: 12px 14px;
+  background: var(--field); border-radius: 6px;
+}
+#backup-confirm .msg { font-size: 12.5px; color: var(--ink); line-height: 1.75; letter-spacing: .05em; }
+#backup-confirm .row { margin-top: 10px; display: flex; gap: 10px; }
+#backup-confirm button {
+  border: 0; padding: 6px 14px; border-radius: 4px; cursor: pointer;
+  font-size: 12px; letter-spacing: .1em;
+}
+#backup-do { background: var(--accent); color: #fff; }
+#backup-cancel { background: transparent; color: var(--sub); }
+#backup-msg { margin-top: 10px; font-size: 11.5px; color: var(--sub); letter-spacing: .08em; }
+
 #count-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
 #count-row .lbl { font-size: 13px; letter-spacing: .12em; white-space: nowrap; flex: none; }
 #count-row .grp { display: flex; align-items: baseline; gap: 8px; flex: none; }
@@ -593,6 +616,23 @@ footer { margin: 52px 28px 0; text-align: center; }
       <div id="sum-line" hidden>添え書きの累計:<span class="val" id="sum-num"></span> km</div>
       <div id="no-total" hidden>まだ、印はありません。最初の一歩から始まります。</div>
       <div class="footnote">あなたにだけ見える、静かな累積です。休んでも、減りません。</div>
+
+      <!-- 端末が変わっても、積み重ねを連れて行けるように。ネットワークには一切出ない(端末内で完結) -->
+      <div id="backup-links">
+        <button id="backup-export" class="text-link" type="button" hidden>積み重ねを書き出す</button>
+        <label class="text-link" id="backup-import-label">
+          <input type="file" accept="application/json,.json" id="backup-import" class="visually-hidden">
+          積み重ねを戻す
+        </label>
+      </div>
+      <div id="backup-confirm" hidden>
+        <div class="msg" id="backup-confirm-msg"></div>
+        <div class="row">
+          <button id="backup-do" type="button">戻す</button>
+          <button id="backup-cancel" type="button">やめる</button>
+        </div>
+      </div>
+      <div id="backup-msg" hidden></div>
     </section>
 
     <section id="sec02" class="card">
@@ -671,6 +711,9 @@ footer { margin: 52px 28px 0; text-align: center; }
 
 </div>
 
+<!-- 層1の純ロジック(dayKey / applyStamp / createStore / バックアップ 等)。
+     テスト対象・複製時の TIME_ZONE 差し替え点。defer/async/type=module を付けない。 -->
+<script src="js/minamo-core.js"></script>
 <script>
 (function () {
   'use strict';
@@ -681,20 +724,13 @@ footer { margin: 52px 28px 0; text-align: center; }
   var API_BASE = 'https://minamo-api.junyamasaki.workers.dev';
 
   /* ---------- 状態(localStorage / docs/01 §8) ---------- */
-  var mem = {}; // localStorage不可(プライベートモード等)のときのその場しのぎ
-  function lsGet(k, d) {
-    try { var v = localStorage.getItem('minamo.' + k); if (v != null) return v; } catch (e) {}
-    return (k in mem) ? mem[k] : d;
-  }
-  function lsSet(k, v) {
-    mem[k] = String(v);
-    try { localStorage.setItem('minamo.' + k, String(v)); } catch (e) {}
-  }
+  // 純ロジックは js/minamo-core.js に切り出し(テスト可能に)。ここは薄いラッパのみ。
+  // localStorage不可(プライベートモード等)のときは createStore がメモリにフォールバックする
+  var store = minamoCore.createStore(typeof localStorage !== 'undefined' ? localStorage : null);
+  function lsGet(k, d) { return store.get(k, d); }
+  function lsSet(k, v) { store.set(k, v); }
 
-  function jstKey(offsetDays) {
-    var d = new Date(Date.now() + (offsetDays || 0) * 86400000);
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(d);
-  }
+  function jstKey(offsetDays) { return minamoCore.dayKey(offsetDays); }
   function todayKey() { return jstKey(0); }
 
   function jsonState(k) {
@@ -842,8 +878,14 @@ footer { margin: 52px 28px 0; text-align: center; }
   var elSec03 = $('sec03'), elBanner = $('bow-banner'), elField = $('bow-field'), elCaption = $('bow-caption');
   var elBowLead = $('bow-lead');
   var elBannerTxt = $('bow-banner-txt');
+  var elBackupExport = $('backup-export');
+  var elBackupImport = $('backup-import');
+  var elBackupConfirm = $('backup-confirm'), elBackupConfirmMsg = $('backup-confirm-msg');
+  var elBackupDo = $('backup-do'), elBackupCancel = $('backup-cancel');
+  var elBackupMsg = $('backup-msg');
 
   var showEditor = false;
+  var pendingRestore = null; // parseBackup 済みの候補。「戻す」まで確定しない
 
   /* ---------- API(層2・層3) — 失敗はすべて静かに畳む(docs/01 §9) ---------- */
   var serverCount = null;         // GET /api/today の count(未取得は null → 「—」)
@@ -869,10 +911,8 @@ footer { margin: 52px 28px 0; text-align: center; }
         if (!d || !d.anonId) return;
         // きのう分の anonId を anonPrev に退避してから、今日の anonId を書く。
         // これで押印+リロード後も「きのうの走りへの会釈」バナーが端末から消えない
-        var prev = anonState();
-        if (prev && prev.date === jstKey(-1)) {
-          lsSet('anonPrev', JSON.stringify(prev));
-        }
+        var carry = minamoCore.carryAnon(anonState(), jstKey(-1));
+        if (carry) lsSet('anonPrev', JSON.stringify(carry));
         lsSet('anon', JSON.stringify({ date: d.date, id: d.anonId }));
       })
       .catch(function () {});
@@ -897,8 +937,7 @@ footer { margin: 52px 28px 0; text-align: center; }
     var t = jstKey(0), y = jstKey(-1);
     // 今日の anon と、退避してあるきのうの anonPrev の両方を照会する。
     // 押印直後にリロードしても、TTL内のきのうの気配が消えないように
-    var anons = [anonState(), anonPrevState()]
-      .filter(function (a) { return a && a.id && (a.date === t || a.date === y); });
+    var anons = minamoCore.bowQueryTargets(anonState(), anonPrevState(), t, y);
     anons.forEach(function (anon) {
       apiFetch('/api/bow?date=' + encodeURIComponent(anon.date) + '&id=' + encodeURIComponent(anon.id), { method: 'GET' })
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -906,7 +945,7 @@ footer { margin: 52px 28px 0; text-align: center; }
           if (!d || !d.bowed) return;
           // 「今日」の会釈は「きのう」より優先。並行して両方bowedが返っても、
           // 一度today側で立ったバナーは、後から届いたyesterday側で上書きしない
-          if (!received || (anon.date === t && receivedDate !== t)) {
+          if (minamoCore.shouldAdoptBow(receivedDate, anon.date, t)) {
             received = true;
             receivedDate = anon.date;
             render();
@@ -981,6 +1020,8 @@ footer { margin: 52px 28px 0; text-align: center; }
     elTotalNum.textContent = total;
     elSumLine.hidden = !(total > 0 && sumKm > 0);
     elSumNum.textContent = sumKm;
+    // 「書き出す」は積み重ねがあるときだけ。「戻す」は常時(新端末での復元が最頻の入口)
+    elBackupExport.hidden = !(total > 0);
 
     /* 風景の複利 */
     renderScape(total);
@@ -1070,10 +1111,13 @@ footer { margin: 52px 28px 0; text-align: center; }
   /* ---------- 押印 ---------- */
   function pressStamp() {
     var t = todayKey();
-    if (lsGet('last', '') === t) return;
-    var total = (parseInt(lsGet('total', '0'), 10) || 0) + 1;
-    lsSet('total', total);
-    lsSet('last', t);
+    var next = minamoCore.applyStamp(
+      { total: parseInt(lsGet('total', '0'), 10) || 0, last: lsGet('last', '') },
+      t
+    );
+    if (!next) return; // 同日重複は加算しない
+    lsSet('total', next.total);
+    lsSet('last', next.last);
     flash();
     stampedThisSession = true;
     // 所作の三拍: 押し込む(:active) → 判が持ち上がる(press-seq) → カードにぽん(pressed-now)
@@ -1106,13 +1150,13 @@ footer { margin: 52px 28px 0; text-align: center; }
     var t = todayKey();
     var km = parseFloat(elInKm.value);
     var min = parseFloat(elInMin.value);
-    if (!(km > 0) && !(min > 0)) { showEditor = false; render(); return; }
-    var prev = noteToday();
-    var sum = parseFloat(lsGet('sumKm', '0')) || 0;
-    if (prev && prev.km) sum -= prev.km;
-    if (km > 0) sum += km;
-    lsSet('sumKm', Math.round(sum * 10) / 10);
-    lsSet('note', JSON.stringify({ date: t, km: km > 0 ? km : null, min: min > 0 ? min : null }));
+    var next = minamoCore.applyNote(
+      { sumKm: parseFloat(lsGet('sumKm', '0')) || 0, note: noteToday() },
+      t, km, min
+    );
+    if (!next) { showEditor = false; render(); return; }
+    lsSet('sumKm', next.sumKm);
+    lsSet('note', JSON.stringify(next.note));
     showEditor = false;
     render();
   }
@@ -1296,6 +1340,81 @@ footer { margin: 52px 28px 0; text-align: center; }
     }
   }
 
+  /* ---------- バックアップ/復元(端末内完結・ネットワークには一切出ない) ---------- */
+  var BACKUP_ERR = 'このファイルからは、積み重ねを読み取れませんでした。';
+
+  function setBackupMsg(msg) {
+    elBackupMsg.textContent = msg || '';
+    elBackupMsg.hidden = !msg;
+  }
+
+  function currentBackupState() {
+    return {
+      total: parseInt(lsGet('total', '0'), 10) || 0,
+      last: lsGet('last', ''),
+      sumKm: parseFloat(lsGet('sumKm', '0')) || 0,
+      note: noteToday(),
+    };
+  }
+
+  // 書き出し: Blob + a[download]。ファイル名はASCII固定(iOS共有シートの文字化け回避)
+  function exportBackup() {
+    setBackupMsg('');
+    var body = minamoCore.makeBackup(currentBackupState(), new Date().toISOString());
+    var blob = new Blob([JSON.stringify(body, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    var url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = 'minamo-' + todayKey() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // 読み戻し: parse → インライン確認 → 「戻す」で全面上書き。confirm()は使わない
+  function onBackupFile(e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = ''; // 同じファイルの再選択でも change を発火させる
+    if (!f) return;
+    setBackupMsg('');
+    if (f.size > 65536) { setBackupMsg(BACKUP_ERR); return; }
+    f.text().then(function (text) {
+      var parsed = minamoCore.parseBackup(text);
+      if (!parsed) { setBackupMsg(BACKUP_ERR); return; }
+      pendingRestore = parsed;
+      var cur = currentBackupState();
+      var msg = parsed.total + '日分の積み重ねを、この端末に戻します。';
+      if (cur.total > 0) msg += 'いまこの端末にある ' + cur.total + '日分は、置き換わります。';
+      elBackupConfirmMsg.textContent = msg;
+      elBackupConfirm.hidden = false;
+    }).catch(function () { setBackupMsg(BACKUP_ERR); });
+  }
+
+  function cancelRestore() {
+    pendingRestore = null;
+    elBackupConfirm.hidden = true;
+  }
+
+  // 復元: total / last / sumKm / note を上書き。anon/anonPrev/bowed は「翌日消える」思想で触らない。
+  // stampedThisSession も false のまま(この端末では押していないので層2の +1 補正なしが正しい)
+  function doRestore() {
+    if (!pendingRestore) return;
+    var p = pendingRestore;
+    pendingRestore = null;
+    lsSet('total', p.total);
+    lsSet('last', p.last);
+    lsSet('sumKm', p.sumKm);
+    if (p.note) {
+      lsSet('note', JSON.stringify(p.note));
+    } else {
+      store.remove('note');
+    }
+    elBackupConfirm.hidden = true;
+    setBackupMsg('積み重ねを戻しました。');
+    render();
+  }
+
   /* ---------- 会釈 ---------- */
   function bowAt(i, to) {
     var t = todayKey();
@@ -1323,6 +1442,10 @@ footer { margin: 52px 28px 0; text-align: center; }
   $('note-rewrite').addEventListener('click', openNote);
   $('note-open').addEventListener('click', openNote);
   $('in-file').addEventListener('change', onFile);
+  elBackupExport.addEventListener('click', exportBackup);
+  elBackupImport.addEventListener('change', onBackupFile);
+  elBackupDo.addEventListener('click', doRestore);
+  elBackupCancel.addEventListener('click', cancelRestore);
   var elFileLabel = document.querySelector('.file-label');
   elFileLabel.addEventListener('dragover', function (e) { e.preventDefault(); });
   elFileLabel.addEventListener('drop', function (e) {
@@ -1339,11 +1462,11 @@ footer { margin: 52px 28px 0; text-align: center; }
   /* ---------- 起動 ---------- */
   // 起動時に古い anonPrev(もはや「きのう」ですらないもの)を静かに掃除する。
   // 動作には影響しないが、端末に長く残らないように
+  // (以前はプレフィックスなしで localStorage.removeItem('anonPrev') を呼んでおり、
+  //  実キー minamo.anonPrev が消えない空振りになっていた — store 経由で確実に消す)
   (function () {
     var prev = anonPrevState();
-    if (prev && prev.date !== jstKey(-1)) {
-      try { localStorage.removeItem('anonPrev'); } catch (e) {}
-    }
+    if (prev && prev.date !== jstKey(-1)) store.remove('anonPrev');
   })();
   applyFragment(); // フラグメントは最初の描画前に読み、URLから即消す
   render();
